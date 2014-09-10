@@ -27,6 +27,8 @@ public:
 
     void setSamples(Samples*);
 
+public slots:
+    void setVisualisation(bool);
 
 protected:
     void paintEvent(QPaintEvent *event);

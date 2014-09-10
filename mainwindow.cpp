@@ -55,10 +55,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
+    QObject::connect(ui->actionVisualizeGaze, SIGNAL(toggled(bool)), d->videoWidget, SLOT(setVisualisation(bool)));
     ui->gridLayout->addWidget(d->videoWidget);
     d->videoWidget->show();
     d->player->play();
     d->quiltWidget->show();
+
+    d->videoWidget->setVisualisation(ui->actionVisualizeGaze->isChecked());
 }
 
 

@@ -13,6 +13,7 @@ class VideoWidgetPrivate {
 public:
     VideoWidgetPrivate()
         : surface(NULL)
+        , visualizeGaze(false)
     { /* ... */ }
     ~VideoWidgetPrivate()
     {
@@ -22,6 +23,7 @@ public:
     VideoWidgetSurface *surface;
     QPoint position;
     Samples *gazeSamples;
+    bool visualizeGaze;
 };
 
 
@@ -57,6 +59,12 @@ void VideoWidget::setSamples(Samples *samples)
 }
 
 
+void VideoWidget::setVisualisation(bool enabled)
+{
+    d_ptr->visualizeGaze = enabled;
+}
+
+
 float easeInOut(float k) {
     if ((k *= 2) < 1)
         return 0.5 * k * k;
@@ -84,23 +92,25 @@ void VideoWidget::paintEvent(QPaintEvent *event)
     else {
         painter.fillRect(event->rect(), palette().background());
     }
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setCompositionMode(QPainter::CompositionMode_Difference);
-    painter.setPen(Qt::transparent);
-    const int nSamples = d->gazeSamples->count();
-    const int maxSamples = qMin(nSamples, 10);
-    QPointF sum;
-    for (int i = 0; i < maxSamples; ++i) {
-        painter.setBrush(QBrush(QColor(230, 80, 30, int(255 * easeInOut(float(i) / maxSamples)))));
-        QPointF pos = d->gazeSamples->at(nSamples - i - 1).pos;
-        pos.setX(pos.x() * width());
-        pos.setY(pos.y() * height());
-        painter.drawEllipse(pos, 5, 5);
-        sum += pos;
-    }
-    if (maxSamples > 0) {
-        painter.setBrush(Qt::blue);
-        painter.drawEllipse(sum / maxSamples, 7, 7);
+    if (d->visualizeGaze) {
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setCompositionMode(QPainter::CompositionMode_Difference);
+        painter.setPen(Qt::transparent);
+        const int nSamples = d->gazeSamples->count();
+        const int maxSamples = qMin(nSamples, 10);
+        QPointF sum;
+        for (int i = 0; i < maxSamples; ++i) {
+            painter.setBrush(QBrush(QColor(230, 80, 30, int(255 * easeInOut(float(i) / maxSamples)))));
+            QPointF pos = d->gazeSamples->at(nSamples - i - 1).pos;
+            pos.setX(pos.x() * width());
+            pos.setY(pos.y() * height());
+            painter.drawEllipse(pos, 5, 5);
+            sum += pos;
+        }
+        if (maxSamples > 0) {
+            painter.setBrush(Qt::blue);
+            painter.drawEllipse(sum / maxSamples, 7, 7);
+        }
     }
 }
 
