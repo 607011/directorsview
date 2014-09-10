@@ -14,9 +14,16 @@ LIBS += Tobii.EyeX.Client.lib
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    eyexhost.cpp
+    eyexhost.cpp \
+    quiltwidget.cpp \
+    videowidgetsurface.cpp \
+    videowidget.cpp
 
 HEADERS  += mainwindow.h \
-    eyexhost.h
+    eyexhost.h \
+    quiltwidget.h \
+    videowidgetsurface.h \
+    videowidget.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    quiltwidget.ui

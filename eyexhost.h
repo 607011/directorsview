@@ -14,7 +14,7 @@ public:
     Sample(void)
         : timestamp(0)
     { /* ... */ }
-    Sample(const QPoint &p, qint64 t)
+    Sample(const QPointF &p, qint64 t)
         : pos(p)
         , timestamp(t)
     { /* ... */ }
@@ -22,7 +22,7 @@ public:
         : pos(other.pos)
         , timestamp(other.timestamp)
     { /* ... */ }
-    QPoint pos;
+    QPointF pos;
     qint64 timestamp;
 };
 

@@ -7,6 +7,8 @@
 #include <QMainWindow>
 #include <QScopedPointer>
 #include <QPaintEvent>
+#include <QCloseEvent>
+#include <QImage>
 
 #include "eyexhost.h"
 
@@ -25,12 +27,13 @@ public:
     ~MainWindow();
 
 protected:
-    void paintEvent(QPaintEvent*);
+    void closeEvent(QCloseEvent*);
 
 private: // methods
 
 private slots:
     void getGazeSample(const Sample &);
+    void setFrame(const QImage &);
 
 private:
     Ui::MainWindow *ui;
