@@ -3,14 +3,13 @@
 
 #include <QtCore/QDebug>
 
+#include "main.h"
 #include "quiltwidget.h"
-#include "ui_quiltwidget.h"
 
 #include <QVector>
 #include <QImage>
 #include <QPainter>
 
-typedef QVector<QImage> ImageList;
 
 class QuiltWidgetPrivate {
 public:
@@ -21,7 +20,7 @@ public:
     { /* ... */ }
     ~QuiltWidgetPrivate()
     { /* ... */ }
-    ImageList images;
+    QVector<QImage> images;
     const QSize imageSize;
     int currentImageIdx;
     QPixmap quilt;
@@ -30,17 +29,16 @@ public:
 
 QuiltWidget::QuiltWidget(QWidget *parent)
     : QWidget(parent)
-    , ui(new Ui::QuiltWidget)
     , d_ptr(new QuiltWidgetPrivate)
 {
-    ui->setupUi(this);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    setWindowTitle(QString("%1 - Quilt").arg(AppName));
 }
 
 
 QuiltWidget::~QuiltWidget()
 {
-    delete ui;
+    // ...
 }
 
 
@@ -74,7 +72,6 @@ void QuiltWidget::addImage(const QImage &image)
     else {
         d->images[d->currentImageIdx] = image;
     }
-    qDebug() << d->currentImageIdx;
     // draw tiles onto virtual canvas
     if (d->images.count() > 0) {
         QPainter p(&d->quilt);

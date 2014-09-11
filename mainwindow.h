@@ -30,10 +30,14 @@ protected:
     void closeEvent(QCloseEvent*);
 
 private: // methods
+    void updateWindowTitle(void);
+    void saveSettings(void);
+    void restoreSettings(void);
 
 private slots:
     void getGazeSample(const Sample &);
     void setFrame(const QImage &);
+    void renderWidgetReady(void);
 
 private:
     Ui::MainWindow *ui;

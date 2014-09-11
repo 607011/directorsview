@@ -54,7 +54,6 @@ bool VideoWidgetSurface::isFormatSupported(const QVideoSurfaceFormat &format) co
 {
     const QImage::Format imageFormat = QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
     const QSize size = format.frameSize();
-
     return imageFormat != QImage::Format_Invalid
             && !size.isEmpty()
             && format.handleType() == QAbstractVideoBuffer::NoHandle;
@@ -75,9 +74,7 @@ bool VideoWidgetSurface::start(const QVideoSurfaceFormat &format)
         updateVideoRect();
         return true;
     }
-    else {
-        return false;
-    }
+    return false;
 }
 
 

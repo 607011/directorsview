@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/images"/>
+    <qresource prefix="/translations"/>
+    <qresource prefix="/shaders">
+        <file alias="default.vert">shaders/default.vert</file>
+        <file alias="hblur.frag">shaders/hblur.frag</file>
+        <file alias="pixelize.frag">shaders/pixelize.frag</file>
+        <file alias="vblur.frag">shaders/vblur.frag</file>
+        <file alias="fade2black.frag">shaders/fade2black.frag</file>
+        <file alias="default.frag">shaders/default.frag</file>
+    </qresource>
+</RCC>
