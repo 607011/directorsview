@@ -416,7 +416,7 @@ void QVideoDecoder::saveFramePPM(ffmpeg::AVFrame *pFrame, int width, int height,
     int  y;
 
     // Open file
-    sprintf(szFilename, "frame%d.ppm", iFrame);
+    sprintf_s(szFilename, "frame%d.ppm", iFrame);
     pFile=fopen(szFilename, "wb");
     if(pFile==NULL)
         return;

@@ -7,6 +7,7 @@ TARGET = Eyex
 TEMPLATE = app
 
 DEFINES += FILTER_FADE_TO_BLACK=1
+DEFINES += _CRT_SECURE_NO_WARNINGS
 
 TOBII_EYEX_SDK_PATH = $$PWD/tobii-eyex-sdk
 
@@ -24,7 +25,8 @@ SOURCES += main.cpp\
     videowidgetsurface.cpp \
     videowidget.cpp \
     renderwidget.cpp \
-    kernel.cpp
+    kernel.cpp \
+    decoderthread.cpp
 
 HEADERS  += mainwindow.h \
     eyexhost.h \
@@ -34,7 +36,8 @@ HEADERS  += mainwindow.h \
     renderwidget.h \
     util.h \
     main.h \
-    kernel.h
+    kernel.h \
+    decoderthread.h
 
 FORMS    += mainwindow.ui
 

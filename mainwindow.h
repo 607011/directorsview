@@ -28,13 +28,15 @@ public:
     ~MainWindow();
 
 protected:
-    void closeEvent(QCloseEvent*);
+    void closeEvent(QCloseEvent *);
 
 private: // methods
     void updateWindowTitle(void);
     void saveSettings(void);
     void restoreSettings(void);
     void loadVideo(const QString &filename);
+    void processFrame(void);
+
 
 private slots:
     void getGazeSample(const Sample &);

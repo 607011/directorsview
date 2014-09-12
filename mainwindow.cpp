@@ -13,13 +13,13 @@
 #include <QHBoxLayout>
 
 #include "main.h"
+#include "decoderthread.h"
 #include "renderwidget.h"
 #include "quiltwidget.h"
 #include "videowidget.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "eyexhost.h"
-#include "QVideoDecoder.h"
 
 class MainWindowPrivate {
 public:
@@ -29,6 +29,7 @@ public:
          , videoWidget(new VideoWidget)
          , player(new QMediaPlayer)
          , playlist(new QMediaPlaylist)
+         , decoderThread(new DecoderThread)
      { /* ... */ }
      ~MainWindowPrivate()
      {
@@ -37,6 +38,7 @@ public:
          delete videoWidget;
          delete renderWidget;
          delete quiltWidget;
+         delete decoderThread;
      }
      Samples gazeSamples;
      QuiltWidget *quiltWidget;
@@ -48,7 +50,7 @@ public:
      QSlider *positionSlider;
      QString currentVideoFilename;
      QString lastOpenDir;
-     QVideoDecoder decoder;
+     DecoderThread *decoderThread;
 };
 
 
@@ -74,11 +76,11 @@ MainWindow::MainWindow(QWidget *parent)
     controlLayout->setMargin(0);
     controlLayout->addWidget(d->playButton);
     controlLayout->addWidget(d->positionSlider);
-    // controlLayout->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::MinimumExpanding));
 
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
-    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
-    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
+    QObject::connect(d->decoderThread, SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
+    // QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
+    // QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
     QObject::connect(d->renderWidget, SIGNAL(ready()), SLOT(renderWidgetReady()));
     QObject::connect(d->videoWidget, SIGNAL(virtualGazePointChanged(QPointF)), d->renderWidget, SLOT(setGazePoint(QPointF)));
 
@@ -86,7 +88,7 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(ui->actionOpenVideo, SIGNAL(triggered()), SLOT(openVideo()));
     QObject::connect(ui->actionExit, SIGNAL(triggered()), SLOT(close()));
 
-    ui->presentGridLayout->addWidget(d->videoWidget);
+    ui->presentGridLayout->addWidget(d->videoWidget, 0, 0);
     ui->presentGridLayout->addLayout(controlLayout, 1, 0);
     d->videoWidget->show();
     d->quiltWidget->show();
@@ -195,6 +197,9 @@ void MainWindow::renderWidgetReady(void)
 void MainWindow::loadVideo(const QString &filename)
 {
     Q_D(MainWindow);
+//    d->decoderThread->openVideo(filename);
+//    d->decoderThread->start();
+//    return;
     QUrl mediaFileUrl = QUrl::fromLocalFile(filename);
     statusBar()->showMessage(tr("Playing %1 ...").arg(mediaFileUrl.toString()), 5000);
     d->playlist->clear();
@@ -228,14 +233,14 @@ void MainWindow::openVideo(void)
 void MainWindow::positionChanged(qint64 position)
 {
     Q_D(MainWindow);
-    d->positionSlider->setValue(position);
+    d->positionSlider->setValue((int)position);
 }
 
 
 void MainWindow::durationChanged(qint64 duration)
 {
     Q_D(MainWindow);
-    d->positionSlider->setRange(0, duration);
+    d->positionSlider->setMaximum((int)duration);
 }
 
 

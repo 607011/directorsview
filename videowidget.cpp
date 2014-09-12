@@ -91,7 +91,7 @@ void VideoWidget::paintEvent(QPaintEvent *event)
         d_ptr->surface->paint(&painter);
     }
     else {
-        painter.fillRect(event->rect(), palette().background());
+        painter.fillRect(event->rect(), QColor(60, 60, 60));
     }
     if (d->visualizeGaze) {
         painter.setRenderHint(QPainter::Antialiasing);
