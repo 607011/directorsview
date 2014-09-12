@@ -6,7 +6,11 @@ QT += core gui widgets opengl multimediawidgets
 TARGET = Eyex
 TEMPLATE = app
 
-win32:INCLUDEPATH += D:/Developer/tobii-eyex-sdk-cpp/include
+win32 {
+INCLUDEPATH += D:/Developer/tobii-eyex-sdk-cpp/include
+LIBPATH += D:/Developer/tobii-eyex-sdk-cpp/lib/x86
+LIBPATH += D:/Developer/tobii-eyex-sdk-cpp/lib/x64
+}
 
 LIBS += Tobii.EyeX.Client.lib
 
