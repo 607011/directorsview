@@ -133,7 +133,6 @@ void RenderWidget::paintGL(void)
     d->fbo->bind();
     foreach (Kernel *k, d->kernels) {
         if (k->isFunctional()) {
-            k->program->setUniformValue(k->uLocResolution, d->resolution);
             k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
             k->program->setUniformValue(k->uLocPeepholeRadius, d->peepholeRadius);
             k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords4FBO);
@@ -157,7 +156,11 @@ void RenderWidget::setFrame(const QImage &image)
         d->img = image.convertToFormat(QImage::Format_ARGB32);
         makeFBO();
     }
-    makeCurrent();
+    foreach (Kernel *k, d->kernels) {
+        if (!k->isFunctional())
+            break;
+        k->program->setUniformValue(k->uLocResolution, d->resolution);
+    }
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, d->img.width(), d->img.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, d->img.bits());
@@ -196,10 +199,9 @@ void RenderWidget::updateViewport(int w, int h)
     glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
     d->resolution = QSizeF(d->viewport.size());
     foreach (Kernel *k, d->kernels) {
-        if (k->isFunctional()) {
-            k->program->setUniformValue(k->uLocResolution, d->resolution);
-            k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
-        }
+        if (!k->isFunctional())
+            break;
+        k->program->setUniformValue(k->uLocResolution, d->resolution);
     }
     updateGL();
 }
