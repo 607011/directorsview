@@ -132,7 +132,7 @@ public:
         , glVersionMinor(0)
         , scale(1.0)
         , gazePoint(0.5, 0.5)
-        , peepholeRadius(0.5f) // 0.0 .. 1.0
+        , peepholeRadius(0.4f) // 0.0 .. 1.0
     { /* ... */ }
     QImage img;
     QColor backgroundColor;
@@ -166,7 +166,7 @@ RenderWidget::RenderWidget(QWidget *parent)
 }
 
 
-void RenderWidget::makeFBOs(void)
+void RenderWidget::makeFBO(void)
 {
     Q_D(RenderWidget);
     makeCurrent();
@@ -252,15 +252,15 @@ void RenderWidget::paintGL(void)
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);
     d->fbo->bind();
     foreach (Kernel *k, d->kernels) {
-        if (!k->isFunctional())
-            break;
-        k->program->setUniformValue(k->uLocResolution, d->resolution);
-        k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
-        k->program->setUniformValue(k->uLocPeepholeRadius, d->peepholeRadius);
-        k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords4FBO);
-        k->program->bind();
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindTexture(GL_TEXTURE_2D, d->fbo->texture());
+        if (k->isFunctional()) {
+            k->program->setUniformValue(k->uLocResolution, d->resolution);
+            k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
+            k->program->setUniformValue(k->uLocPeepholeRadius, d->peepholeRadius);
+            k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords4FBO);
+            k->program->bind();
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            glBindTexture(GL_TEXTURE_2D, d->fbo->texture());
+        }
         k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords);
     }
     d->fbo->release();
@@ -290,7 +290,7 @@ void RenderWidget::setFrame(const QImage &image)
     Q_D(RenderWidget);
     if (!image.isNull()) {
         d->img = image.convertToFormat(QImage::Format_ARGB32);
-        makeFBOs();
+        makeFBO();
     }
     makeCurrent();
     glActiveTexture(GL_TEXTURE0);

@@ -57,7 +57,7 @@ protected:
 private: // methods
     void updateViewport(const QSize&);
     void updateViewport(int w, int h);
-    void makeFBOs();
+    void makeFBO();
 
 private:
     QScopedPointer<RenderWidgetPrivate> d_ptr;
