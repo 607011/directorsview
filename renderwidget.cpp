@@ -22,7 +22,7 @@ public:
         , glVersionMajor(0)
         , glVersionMinor(0)
         , gazePoint(0.5, 0.5)
-        , peepholeRadius(0.4f) // 0.0 .. 1.0
+        , peepholeRadius(0.2f) // 0.0 .. 1.0
     { /* ... */ }
     QImage img;
     QColor backgroundColor;

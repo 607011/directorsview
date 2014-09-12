@@ -13,6 +13,7 @@ void main(void)
 {
     vec2 coord = vTexCoord * uResolution;
     vec2 ref = uGazePoint * uResolution;
-    float dist = clamp(distance(coord, ref) / length(uResolution) / uPeepholeRadius, 0.1, 1.0);
+    float dist = distance(coord, ref) / length(uResolution) / uPeepholeRadius;
+    dist = clamp(dist * dist, 0.1, 1.0);
     gl_FragColor = vec4(texture2D(uTexture, vTexCoord.st).rgb * (1.0 - dist), 1.0);
 }
