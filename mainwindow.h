@@ -9,6 +9,7 @@
 #include <QPaintEvent>
 #include <QCloseEvent>
 #include <QImage>
+#include <QMediaPlayer>
 
 #include "eyexhost.h"
 
@@ -23,7 +24,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = NULL);
     ~MainWindow();
 
 protected:
@@ -40,6 +41,11 @@ private slots:
     void setFrame(const QImage &);
     void renderWidgetReady(void);
     void openVideo(void);
+    void mediaStateChanged(QMediaPlayer::State);
+    void handleError(void);
+    void play(void);
+    void positionChanged(qint64 position);
+    void durationChanged(qint64 duration);
 
 private:
     Ui::MainWindow *ui;

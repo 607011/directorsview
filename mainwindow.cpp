@@ -8,6 +8,9 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QDir>
+#include <QSlider>
+#include <QPushButton>
+#include <QHBoxLayout>
 
 #include "main.h"
 #include "renderwidget.h"
@@ -16,18 +19,16 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "eyexhost.h"
+#include "QVideoDecoder.h"
 
 class MainWindowPrivate {
 public:
      MainWindowPrivate()
-         : t0(-1)
-         , quiltWidget(new QuiltWidget)
+         : quiltWidget(new QuiltWidget)
          , renderWidget(new RenderWidget)
          , videoWidget(new VideoWidget)
          , player(new QMediaPlayer)
          , playlist(new QMediaPlaylist)
-         , currentVideoFilename("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v")
-         , lastOpenDir(QDir::currentPath())
      { /* ... */ }
      ~MainWindowPrivate()
      {
@@ -37,15 +38,17 @@ public:
          delete renderWidget;
          delete quiltWidget;
      }
-     qint64 t0;
      Samples gazeSamples;
      QuiltWidget *quiltWidget;
      RenderWidget *renderWidget;
      VideoWidget *videoWidget;
      QMediaPlayer *player;
      QMediaPlaylist *playlist;
+     QPushButton *playButton;
+     QSlider *positionSlider;
      QString currentVideoFilename;
      QString lastOpenDir;
+     QVideoDecoder decoder;
 };
 
 
@@ -58,6 +61,21 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle(tr("%1 %2").arg(AppName).arg(AppVersion));
 
+    d->playButton = new QPushButton;
+    d->playButton->setEnabled(false);
+    d->playButton->setMinimumWidth(50);
+    d->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+
+    d->positionSlider = new QSlider(Qt::Horizontal);
+    d->positionSlider->setEnabled(false);
+    d->positionSlider->setRange(0, 0);
+
+    QBoxLayout *controlLayout = new QHBoxLayout;
+    controlLayout->setMargin(0);
+    controlLayout->addWidget(d->playButton);
+    controlLayout->addWidget(d->positionSlider);
+    // controlLayout->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::MinimumExpanding));
+
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
@@ -68,10 +86,17 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(ui->actionOpenVideo, SIGNAL(triggered()), SLOT(openVideo()));
     QObject::connect(ui->actionExit, SIGNAL(triggered()), SLOT(close()));
 
-    ui->gridLayout->addWidget(d->videoWidget);
+    ui->presentGridLayout->addWidget(d->videoWidget);
+    ui->presentGridLayout->addLayout(controlLayout, 1, 0);
     d->videoWidget->show();
     d->quiltWidget->show();
     d->renderWidget->show();
+
+    QObject::connect(d->player, SIGNAL(positionChanged(qint64)), SLOT(positionChanged(qint64)));
+    QObject::connect(d->player, SIGNAL(durationChanged(qint64)), SLOT(durationChanged(qint64)));
+    QObject::connect(d->player, SIGNAL(stateChanged(QMediaPlayer::State)), SLOT(mediaStateChanged(QMediaPlayer::State)));
+    QObject::connect(d->player, SIGNAL(error(QMediaPlayer::Error)), SLOT(handleError()));
+    QObject::connect(d->playButton, SIGNAL(clicked()), SLOT(play()));
 
     restoreSettings();
 }
@@ -136,16 +161,15 @@ void MainWindow::closeEvent(QCloseEvent *)
 }
 
 
-void MainWindow::getGazeSample(const Sample& sample)
+void MainWindow::getGazeSample(const Sample &sample)
 {
     Q_D(MainWindow);
     QPoint localPos = d->videoWidget->mapFromGlobal(sample.pos.toPoint());
     QPointF relativePos = QPointF(
                 qreal(localPos.x()) / d->videoWidget->width(),
                 qreal(localPos.y()) / d->videoWidget->height());
-    if (d->t0 < 0)
-        d->t0 = sample.timestamp;
-    d->gazeSamples.append(Sample(relativePos, sample.timestamp - d->t0));
+    if (d->player->state() == QMediaPlayer::PlayingState)
+        d->gazeSamples.append(Sample(relativePos, d->player->position()));
     d->renderWidget->setGazePoint(relativePos);
 }
 
@@ -172,7 +196,7 @@ void MainWindow::loadVideo(const QString &filename)
 {
     Q_D(MainWindow);
     QUrl mediaFileUrl = QUrl::fromLocalFile(filename);
-    statusBar()->showMessage(tr("Playing %1 ...").arg(mediaFileUrl.toString()));
+    statusBar()->showMessage(tr("Playing %1 ...").arg(mediaFileUrl.toString()), 5000);
     d->playlist->clear();
     d->playlist->addMedia(mediaFileUrl);
     d->playlist->setCurrentIndex(0);
@@ -181,7 +205,8 @@ void MainWindow::loadVideo(const QString &filename)
     d->player->setMuted(true);
     d->player->setVideoOutput(d->videoWidget->videoSurface());
     d->videoWidget->setSamples(&d->gazeSamples);
-    d->player->play();
+    d->playButton->setEnabled(true);
+    play();
 }
 
 
@@ -197,4 +222,54 @@ void MainWindow::openVideo(void)
         d->lastOpenDir = fi.absolutePath();
         loadVideo(filename);
     }
+}
+
+
+void MainWindow::positionChanged(qint64 position)
+{
+    Q_D(MainWindow);
+    d->positionSlider->setValue(position);
+}
+
+
+void MainWindow::durationChanged(qint64 duration)
+{
+    Q_D(MainWindow);
+    d->positionSlider->setRange(0, duration);
+}
+
+
+void MainWindow::play(void)
+{
+    Q_D(MainWindow);
+    switch(d->player->state()) {
+    case QMediaPlayer::PlayingState:
+        d->player->pause();
+        break;
+    default:
+        d->player->play();
+        break;
+    }
+}
+
+
+void MainWindow::mediaStateChanged(QMediaPlayer::State state)
+{
+    Q_D(MainWindow);
+    switch(state) {
+    case QMediaPlayer::PlayingState:
+        d->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+        break;
+    default:
+        d->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+        break;
+    }
+}
+
+
+void MainWindow::handleError(void)
+{
+    Q_D(MainWindow);
+    d->playButton->setEnabled(false);
+    statusBar()->showMessage(tr("Error: ").arg(d->player->errorString()));
 }
