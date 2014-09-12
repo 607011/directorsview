@@ -6,6 +6,8 @@ QT += core gui widgets opengl multimediawidgets
 TARGET = Eyex
 TEMPLATE = app
 
+DEFINES += FILTER_FADE_TO_BLACK=1
+
 TOBII_EYEX_SDK_PATH = $$PWD/tobii-eyex-sdk
 
 QMAKE_LIBDIR += $$TOBII_EYEX_SDK_PATH/lib/x86 $$TOBII_EYEX_SDK_PATH/lib/x64

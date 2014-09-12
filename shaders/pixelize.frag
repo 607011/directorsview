@@ -9,7 +9,7 @@ uniform vec2 uResolution;
 uniform vec2 uGazePoint;
 uniform float uPeepholeRadius;
 
-const float maxPixelSize = 720.0;
+const float maxPixelSize = 20.0;
 
 void main(void)
 {

@@ -131,7 +131,8 @@ public:
         , glVersionMajor(0)
         , glVersionMinor(0)
         , scale(1.0)
-        , peepholeRadius(0.153846f) // 0.0 .. 1.0
+        , gazePoint(0.5, 0.5)
+        , peepholeRadius(0.5f) // 0.0 .. 1.0
     { /* ... */ }
     QImage img;
     QColor backgroundColor;
@@ -208,26 +209,28 @@ void RenderWidget::initializeGL(void)
     makeCurrent();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-#ifndef NO_CLAMP_TO_BORDER
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-#else
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-#endif
 
     // load kernels
     QString vs = loadStringFromFile(":/shaders/default.vert");
-    qDebug() << "\n\nVERTEX SHADER ********\n\n" << vs;
-    QString fs = loadStringFromFile(":/shaders/fade2black.frag");
-    qDebug() << "\n\nFRAGMENT SHADER ********\n\n" << fs;
-    Kernel *kernel = new Kernel;
-    kernel->setShaders(vs, fs);
-    qDebug() << "PROGRAM LINKED:" << kernel->isFunctional();
-    if (kernel->isFunctional())
-        d->kernels.append(kernel);
-    else
-        delete kernel;
+    auto addKernel = [&d, &vs](const QString &name) {
+        Kernel *kernel;
+        kernel = new Kernel;
+        kernel->setShaders(vs, loadStringFromFile(QString(":/shaders/%1.frag").arg(name)));
+        qDebug() << "PROGRAM LINKED:" << kernel->isFunctional();
+        if (kernel->isFunctional())
+            d->kernels.append(kernel);
+        else
+            delete kernel;
+    };
+
+#if FILTER_FADE_TO_BLACK
+    addKernel("fade2black");
+#elif FILTER_BLUR
+    addKernel("hblur");
+    addKernel("vblur");
+#endif
 }
 
 
@@ -236,31 +239,32 @@ void RenderWidget::paintGL(void)
     Q_D(RenderWidget);
     if (d->firstPaintEventPending) {
         d->firstPaintEventPending = false;
-        // makeFBOs();
         emit ready();
     }
 
+    if (d->fbo == NULL)
+        return;
+
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // draw onto screen
     glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);
+    d->fbo->bind();
     foreach (Kernel *k, d->kernels) {
         if (!k->isFunctional())
             break;
         k->program->setUniformValue(k->uLocResolution, d->resolution);
         k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
         k->program->setUniformValue(k->uLocPeepholeRadius, d->peepholeRadius);
-        k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords);
+        k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords4FBO);
         k->program->bind();
-//        if (d->fbo)
-//            d->fbo->bind();
-        glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, d->textureHandle);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindTexture(GL_TEXTURE_2D, d->fbo->texture());
+        k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords);
     }
+    d->fbo->release();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     emit frameReady();
 }
