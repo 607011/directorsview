@@ -16,7 +16,8 @@ EyeXHost::EyeXHost(void)
 {
     qRegisterMetaType<Sample>("Sample");
     bool success = true;
-    success &= TX_RESULT_OK == txInitializeSystem(TX_SYSTEMCOMPONENTOVERRIDEFLAG_NONE, NULL, NULL, NULL);
+
+    success &= TX_RESULT_OK == txInitializeEyeX(TX_EYEXCOMPONENTOVERRIDEFLAG_NONE, NULL, NULL, NULL, NULL);
     success &= TX_RESULT_OK == txCreateContext(&hContext, TX_FALSE);
     success &= TX_RESULT_OK == InitializeGlobalInteractorSnapshot(hContext);
     success &= TX_RESULT_OK == txRegisterConnectionStateChangedHandler(
@@ -47,7 +48,7 @@ TX_RESULT EyeXHost::InitializeGlobalInteractorSnapshot(TX_CONTEXTHANDLE hContext
     TX_GAZEPOINTDATAPARAMS gazeParams = { TX_GAZEPOINTDATAMODE_LIGHTLYFILTERED };
     result = txCreateGlobalInteractorSnapshot(hContext, InteractorId, &g_hGlobalInteractorSnapshot, &gazeInteractor);
     if (result == TX_RESULT_OK) {
-        result = txSetGazePointDataBehavior(gazeInteractor, &gazeParams);
+        result = txCreateGazePointDataBehavior(gazeInteractor, &gazeParams);
         txReleaseObject(&gazeInteractor);
     }
     return result;
@@ -112,7 +113,7 @@ void TX_CALLCONVENTION EyeXHost::HandleEvent(TX_CONSTHANDLE hAsyncData, TX_USERP
 
     // qDebug() << txDebugObject(hEvent);
 
-    if (TX_RESULT_OK == txGetEventBehavior(hEvent, &hBehavior, TX_INTERACTIONBEHAVIORTYPE_GAZEPOINTDATA)) {
+    if (TX_RESULT_OK == txGetEventBehavior(hEvent, &hBehavior, TX_BEHAVIORTYPE_GAZEPOINTDATA)) {
         OnGazeDataEvent(hBehavior);
         txReleaseObject(&hBehavior);
     }
