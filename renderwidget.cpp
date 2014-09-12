@@ -126,7 +126,8 @@ class RenderWidgetPrivate {
 public:
     explicit RenderWidgetPrivate(void)
         : firstPaintEventPending(true)
-        , fbo(NULL)
+        , fbo4Cascade(NULL)
+        , fbo4ResultImage(NULL)
         , textureHandle(0)
         , glVersionMajor(0)
         , glVersionMinor(0)
@@ -136,7 +137,8 @@ public:
     QColor backgroundColor;
     bool firstPaintEventPending;
     KernelList kernels;
-    QGLFramebufferObject* fbo;
+    QGLFramebufferObject* fbo4Cascade;
+    QGLFramebufferObject* fbo4ResultImage;
     GLuint textureHandle;
     QSizeF resolution;
     QRect viewport;
@@ -147,7 +149,8 @@ public:
 
     virtual ~RenderWidgetPrivate()
     {
-        safeDelete(fbo);
+        safeDelete(fbo4Cascade);
+        safeDelete(fbo4ResultImage);
     }
 };
 
@@ -167,8 +170,24 @@ void RenderWidget::makeImageFBO(void)
 {
     Q_D(RenderWidget);
     makeCurrent();
-    if (d->fbo == NULL || d->fbo->size() != d->img.size())
-        safeRenew(d->fbo, new QGLFramebufferObject(d->img.size()));
+    if (d->fbo4ResultImage == NULL || d->fbo4ResultImage->size() != d->img.size())
+        safeRenew(d->fbo4ResultImage, new QGLFramebufferObject(d->img.size()));
+}
+
+
+void RenderWidget::makeFilterCascadeFBO(void)
+{
+    Q_D(RenderWidget);
+    makeCurrent();
+    if (d->fbo4Cascade == NULL || d->fbo4Cascade->size() != d->img.size())
+        safeRenew(d->fbo4Cascade, new QGLFramebufferObject(d->img.size()));
+}
+
+
+void RenderWidget::makeFBOs(void)
+{
+    makeImageFBO();
+    makeFilterCascadeFBO();
 }
 
 
@@ -258,28 +277,21 @@ void RenderWidget::paintGL(void)
 
     // draw into FBO
     foreach (Kernel *k, d->kernels) {
-        if (!k->isFunctional() || d->fbo == NULL)
+        if (!k->isFunctional())
             break;
-        glViewport(0, 0, d->fbo->width(), d->fbo->height());
-        k->program->setUniformValue(k->uLocResolution, QSizeF(d->fbo->size()));
+        glViewport(0, 0, d->fbo4Cascade->width(), d->fbo4Cascade->height());
+        k->program->setUniformValue(k->uLocResolution, QSizeF(d->fbo4ResultImage->size()));
         k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
         k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords4FBO);
         k->program->bind();
-        d->fbo->bind();
+        d->fbo4Cascade->bind();
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, d->fbo->width(), d->fbo->height(), 0);
-        d->fbo->release();
+        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, d->fbo4Cascade->width(), d->fbo4Cascade->height(), 0);
+        d->fbo4Cascade->release();
     }
 
     emit frameReady();
 }
-
-
-void RenderWidget::updateViewport(void)
-{
-    updateViewport(width(), height());
-}
-
 
 
 QImage RenderWidget::resultImage(void)
@@ -287,29 +299,27 @@ QImage RenderWidget::resultImage(void)
     Q_D(RenderWidget);
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     makeImageFBO();
-    d->fbo->bind();
+    d->fbo4ResultImage->bind();
     glViewport(0, 0, d->img.width(), d->img.height());
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    d->fbo->release();
+    d->fbo4ResultImage->release();
     glPopAttrib();
-    return d->fbo->toImage();
+    return d->fbo4ResultImage->toImage();
 }
 
 
 void RenderWidget::setFrame(const QImage &image)
 {
     Q_D(RenderWidget);
-    if (!image.isNull() ) {
+    if (!image.isNull()) {
         d->img = image.convertToFormat(QImage::Format_ARGB32);
-        makeImageFBO();
+        makeFBOs();
     }
     makeCurrent();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, d->img.width(), d->img.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, d->img.bits());
     updateViewport();
-
-    updateGL();
 }
 
 
@@ -324,12 +334,6 @@ void RenderWidget::setGazePoint(const QPointF &gazePoint)
 QString RenderWidget::glVersionString(void) const
 {
     return QString("%1.%2").arg(d_ptr->glVersionMajor).arg(d_ptr->glVersionMinor);
-}
-
-
-void RenderWidget::updateViewport(const QSize& size)
-{
-    updateViewport(size.width(), size.height());
 }
 
 
@@ -348,6 +352,18 @@ void RenderWidget::updateViewport(int w, int h)
         }
     }
     updateGL();
+}
+
+
+void RenderWidget::updateViewport(const QSize& size)
+{
+    updateViewport(size.width(), size.height());
+}
+
+
+void RenderWidget::updateViewport(void)
+{
+    updateViewport(width(), height());
 }
 
 
