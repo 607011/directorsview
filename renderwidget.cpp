@@ -64,15 +64,6 @@ void RenderWidget::makeFBO(void)
 }
 
 
-QString loadStringFromFile(QString filename) {
-    QFile f(filename);
-    if (!f.open(QFile::ReadOnly | QFile::Text))
-        return QString();
-    QTextStream in(&f);
-    return in.readAll();
-}
-
-
 void RenderWidget::resizeGL(int w, int h)
 {
     updateViewport(w, h);
@@ -102,11 +93,11 @@ void RenderWidget::initializeGL(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
     // load kernels
-    QString vs = loadStringFromFile(":/shaders/default.vert");
-    auto addKernel = [&d, &vs](const QString &name) {
+    auto addKernel = [&d](const QString &name) {
         Kernel *kernel;
         kernel = new Kernel;
-        kernel->setShaders(vs, loadStringFromFile(QString(":/shaders/%1.frag").arg(name)));
+        kernel->setShaders(":/shaders/default.vert",
+                           QString(":/shaders/%1.frag").arg(name));
         qDebug() << "PROGRAM LINKED:" << kernel->isFunctional();
         if (kernel->isFunctional())
             d->kernels.append(kernel);

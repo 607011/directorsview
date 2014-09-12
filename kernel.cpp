@@ -43,17 +43,17 @@ Kernel::~Kernel()
 }
 
 
-bool Kernel::setShaders(const QString &vs, const QString &fs) {
-    if (vs.isEmpty() || fs.isEmpty())
-        return false;
+bool Kernel::setShaders(const QString &vsFile, const QString &fsFile) {
+    Q_ASSERT(!vsFile.isEmpty());
+    Q_ASSERT(!fsFile.isEmpty());
     bool ok = true;
     try {
-        ok = vertexShader->compileSourceCode(vs);
+        ok = vertexShader->compileSourceFile(vsFile);
         qDebug() << "VERTEX SHADER COMPILED:" << vertexShader->isCompiled();
         qDebug() << "VERTEX SHADER COMPILATION LOG:" << vertexShader->log();
         if (!ok)
             return false;
-        ok = fragmentShader->compileSourceCode(fs);
+        ok = fragmentShader->compileSourceFile(fsFile);
         qDebug() << "FRAGMENT SHADER COMPILED:" << fragmentShader->isCompiled();
         qDebug() << "FRAGMENT SHADER COMPILATION LOG:" << fragmentShader->log();
         if (!ok)

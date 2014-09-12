@@ -15,7 +15,7 @@ class Kernel {
 public:
     Kernel(void);
     ~Kernel();
-    bool setShaders(const QString &vs, const QString &fs);
+    bool setShaders(const QString &vsFile, const QString &fsFile);
     bool isFunctional(void) const;
 
 public: // members
