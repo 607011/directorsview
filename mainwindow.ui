@@ -50,6 +50,8 @@
      <string>File</string>
     </property>
     <addaction name="actionOpenVideo"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuOptions">
     <property name="title">
@@ -83,6 +85,11 @@
    </property>
    <property name="text">
     <string>Visualize gaze</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
    </property>
   </action>
  </widget>

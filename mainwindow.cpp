@@ -2,12 +2,12 @@
 // All rights reserved.
 
 #include <QtCore/QDebug>
-#include <QPainter>
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
-#include <QVideoProbe>
-#include <QByteArray>
 #include <QSettings>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QDir>
 
 #include "main.h"
 #include "renderwidget.h"
@@ -26,6 +26,8 @@ public:
          , videoWidget(new VideoWidget)
          , player(new QMediaPlayer)
          , playlist(new QMediaPlaylist)
+         , currentVideoFilename("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v")
+         , lastOpenDir(QDir::currentPath())
      { /* ... */ }
      ~MainWindowPrivate()
      {
@@ -42,6 +44,8 @@ public:
      VideoWidget *videoWidget;
      QMediaPlayer *player;
      QMediaPlaylist *playlist;
+     QString currentVideoFilename;
+     QString lastOpenDir;
 };
 
 
@@ -54,15 +58,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle(tr("%1 %2").arg(AppName).arg(AppVersion));
 
-    QUrl mediaFileUrl = QUrl::fromLocalFile("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v");
-    statusBar()->showMessage(tr("Playing %1 ...").arg(mediaFileUrl.toString()));
-    d->playlist->addMedia(mediaFileUrl);
-    d->playlist->setCurrentIndex(0);
-    d->player->setPlaylist(d->playlist);
-    d->player->setMuted(true);
-    d->player->setVideoOutput(d->videoWidget->videoSurface());
-    d->videoWidget->setSamples(&d->gazeSamples);
-
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
@@ -70,9 +65,11 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(d->videoWidget, SIGNAL(virtualGazePointChanged(QPointF)), d->renderWidget, SLOT(setGazePoint(QPointF)));
 
     QObject::connect(ui->actionVisualizeGaze, SIGNAL(toggled(bool)), d->videoWidget, SLOT(setVisualisation(bool)));
+    QObject::connect(ui->actionOpenVideo, SIGNAL(triggered()), SLOT(openVideo()));
+    QObject::connect(ui->actionExit, SIGNAL(triggered()), SLOT(close()));
+
     ui->gridLayout->addWidget(d->videoWidget);
     d->videoWidget->show();
-    d->player->play();
     d->quiltWidget->show();
     d->renderWidget->show();
 
@@ -98,6 +95,10 @@ void MainWindow::restoreSettings(void)
     QSettings settings(Company, AppName);
     restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
     ui->actionVisualizeGaze->setChecked(settings.value("MainWindow/visualizeGaze", true).toBool());
+    d->lastOpenDir = settings.value("MainWindow/lastOpenDir").toString();
+    d->currentVideoFilename = settings.value("MainWindow/lastVideo").toString();
+    if (!d->currentVideoFilename.isEmpty())
+        loadVideo(d->currentVideoFilename);
     d->videoWidget->setVisualisation(ui->actionVisualizeGaze->isChecked());
     d->renderWidget->restoreGeometry(settings.value("RenderWidget/geometry").toByteArray());
     d->quiltWidget->restoreGeometry(settings.value("QuiltWidget/geometry").toByteArray());
@@ -110,6 +111,8 @@ void MainWindow::saveSettings(void)
     QSettings settings(Company, AppName);
     settings.setValue("MainWindow/geometry", saveGeometry());
     settings.setValue("MainWindow/visualizeGaze", ui->actionVisualizeGaze->isChecked());
+    settings.setValue("MainWindow/lastOpenDir", d->lastOpenDir);
+    settings.setValue("MainWindow/lastVideo", d->currentVideoFilename);
     settings.setValue("RenderWidget/geometry", d->renderWidget->saveGeometry());
     settings.setValue("QuiltWidget/geometry", d->quiltWidget->saveGeometry());
 }
@@ -136,8 +139,8 @@ void MainWindow::closeEvent(QCloseEvent *)
 void MainWindow::getGazeSample(const Sample& sample)
 {
     Q_D(MainWindow);
-    const QPoint &localPos = d->videoWidget->mapFromGlobal(sample.pos.toPoint());
-    const QPointF &relativePos = QPointF(
+    QPoint localPos = d->videoWidget->mapFromGlobal(sample.pos.toPoint());
+    QPointF relativePos = QPointF(
                 qreal(localPos.x()) / d->videoWidget->width(),
                 qreal(localPos.y()) / d->videoWidget->height());
     if (d->t0 < 0)
@@ -162,4 +165,36 @@ void MainWindow::setFrame(const QImage &image)
 void MainWindow::renderWidgetReady(void)
 {
     updateWindowTitle();
+}
+
+
+void MainWindow::loadVideo(const QString &filename)
+{
+    Q_D(MainWindow);
+    QUrl mediaFileUrl = QUrl::fromLocalFile(filename);
+    statusBar()->showMessage(tr("Playing %1 ...").arg(mediaFileUrl.toString()));
+    d->playlist->clear();
+    d->playlist->addMedia(mediaFileUrl);
+    d->playlist->setCurrentIndex(0);
+    d->player->stop();
+    d->player->setPlaylist(d->playlist);
+    d->player->setMuted(true);
+    d->player->setVideoOutput(d->videoWidget->videoSurface());
+    d->videoWidget->setSamples(&d->gazeSamples);
+    d->player->play();
+}
+
+
+void MainWindow::openVideo(void)
+{
+    Q_D(MainWindow);
+    QString filename = QFileDialog::getOpenFileName(this,
+                                                    tr("Open video"),
+                                                    d->lastOpenDir,
+                                                    tr("Video files (*.*)"));
+    if(!filename.isNull()) {
+        QFileInfo fi(filename);
+        d->lastOpenDir = fi.absolutePath();
+        loadVideo(filename);
+    }
 }

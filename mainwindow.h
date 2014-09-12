@@ -33,11 +33,13 @@ private: // methods
     void updateWindowTitle(void);
     void saveSettings(void);
     void restoreSettings(void);
+    void loadVideo(const QString &filename);
 
 private slots:
     void getGazeSample(const Sample &);
     void setFrame(const QImage &);
     void renderWidgetReady(void);
+    void openVideo(void);
 
 private:
     Ui::MainWindow *ui;
