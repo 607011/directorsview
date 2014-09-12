@@ -85,8 +85,6 @@ void MainWindow::updateWindowTitle(void)
 }
 
 
-
-
 MainWindow::~MainWindow()
 {
     delete ui;
