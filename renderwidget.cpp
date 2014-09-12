@@ -7,14 +7,10 @@
 #include "kernel.h"
 
 #include <QtCore/QDebug>
-#include <QRegExp>
-#include <QStringList>
+#include <QtOpenGL>
 #include <QGLFramebufferObject>
-#include <QVector2D>
-#include <QVector3D>
-#include <QRect>
-#include <QRgb>
-#include <QVector>
+#include <QFile>
+#include <QTextStream>
 #include <QMap>
 
 class RenderWidgetPrivate {

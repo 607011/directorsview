@@ -7,25 +7,25 @@
 #include "videowidget.h"
 #include "videowidgetsurface.h"
 #include "eyexhost.h"
-
+#include "util.h"
 
 class VideoWidgetPrivate {
 public:
     VideoWidgetPrivate()
         : surface(NULL)
+        , gazeSamples(NULL)
         , visualizeGaze(false)
         , leftMouseButtonPressed(false)
     { /* ... */ }
     ~VideoWidgetPrivate()
     {
-        if (surface != NULL)
-            delete surface;
+        safeDelete(surface);
     }
     VideoWidgetSurface *surface;
-    QPoint position;
     Samples *gazeSamples;
     bool visualizeGaze;
     bool leftMouseButtonPressed;
+    QPoint position;
 };
 
 
@@ -97,6 +97,7 @@ void VideoWidget::paintEvent(QPaintEvent *event)
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setCompositionMode(QPainter::CompositionMode_Difference);
         painter.setPen(Qt::transparent);
+        Q_ASSERT(d->gazeSamples != NULL);
         const int nSamples = d->gazeSamples->count();
         const int maxSamples = qMin(nSamples, 10);
         QPointF sum;

@@ -7,6 +7,7 @@
 #include <QMediaPlaylist>
 #include <QVideoProbe>
 #include <QByteArray>
+#include <QSettings>
 
 #include "main.h"
 #include "renderwidget.h"
@@ -25,20 +26,13 @@ public:
          , videoWidget(new VideoWidget)
          , player(new QMediaPlayer)
          , playlist(new QMediaPlaylist)
-     {
-         QUrl mediaFileUrl = QUrl::fromLocalFile("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v");
-         playlist->addMedia(mediaFileUrl);
-         playlist->setCurrentIndex(0);
-         player->setPlaylist(playlist);
-         player->setMuted(true);
-         player->setVideoOutput(videoWidget->videoSurface());
-         videoWidget->setSamples(&gazeSamples);
-     }
+     { /* ... */ }
      ~MainWindowPrivate()
      {
          delete player;
          delete playlist;
          delete videoWidget;
+         delete renderWidget;
          delete quiltWidget;
      }
      qint64 t0;
@@ -58,6 +52,16 @@ MainWindow::MainWindow(QWidget *parent)
 {
     Q_D(MainWindow);
     ui->setupUi(this);
+    setWindowTitle(tr("%1 %2").arg(AppName).arg(AppVersion));
+
+    QUrl mediaFileUrl = QUrl::fromLocalFile("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v");
+    statusBar()->showMessage(tr("Playing %1 ...").arg(mediaFileUrl.toString()));
+    d->playlist->addMedia(mediaFileUrl);
+    d->playlist->setCurrentIndex(0);
+    d->player->setPlaylist(d->playlist);
+    d->player->setMuted(true);
+    d->player->setVideoOutput(d->videoWidget->videoSurface());
+    d->videoWidget->setSamples(&d->gazeSamples);
 
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
@@ -73,7 +77,6 @@ MainWindow::MainWindow(QWidget *parent)
     d->renderWidget->show();
 
     restoreSettings();
-    updateWindowTitle();
 }
 
 
@@ -118,7 +121,7 @@ void MainWindow::closeEvent(QCloseEvent *)
     d_ptr->renderWidget->close();
     d_ptr->quiltWidget->close();
     if (d->gazeSamples.count() > 0) {
-        qDebug() << "Writing log file ...";
+        statusBar()->showMessage("Writing log file ...", 3000);
         QFile logFile("gaze.log");
         logFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
         const qint64 t0 = d->gazeSamples.first().timestamp;

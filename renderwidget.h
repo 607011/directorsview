@@ -4,7 +4,6 @@
 #ifndef __RENDERWIDGET_H_
 #define __RENDERWIDGET_H_
 
-#include <QtOpenGL>
 #include <QGLFunctions>
 #include <QGLWidget>
 #include <QPoint>
@@ -13,7 +12,6 @@
 #include <QImage>
 #include <QResizeEvent>
 #include <QScopedPointer>
-#include <QGLShaderProgram>
 
 
 class RenderWidgetPrivate;
