@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     quiltwidget.cpp \
     videowidgetsurface.cpp \
     videowidget.cpp \
-    renderwidget.cpp
+    renderwidget.cpp \
+    kernel.cpp
 
 HEADERS  += mainwindow.h \
     eyexhost.h \
@@ -32,7 +33,8 @@ HEADERS  += mainwindow.h \
     videowidget.h \
     renderwidget.h \
     util.h \
-    main.h
+    main.h \
+    kernel.h
 
 FORMS    += mainwindow.ui
 

@@ -4,123 +4,18 @@
 #include "renderwidget.h"
 #include "util.h"
 #include "main.h"
+#include "kernel.h"
 
 #include <QtCore/QDebug>
 #include <QRegExp>
 #include <QStringList>
-#include <QGLShader>
 #include <QGLFramebufferObject>
-#include <QGLShaderProgram>
 #include <QVector2D>
 #include <QVector3D>
 #include <QRect>
 #include <QRgb>
 #include <QVector>
 #include <QMap>
-
-
-class Kernel  {
-public:
-    Kernel(void)
-    {
-        program = new QGLShaderProgram();
-        vertexShader = new QGLShader(QGLShader::Vertex);
-        fragmentShader = new QGLShader(QGLShader::Fragment);
-    }
-    Kernel(const Kernel& other)
-        : program(other.program)
-        , fragmentShader(other.fragmentShader)
-        , vertexShader(other.vertexShader)
-    {
-        /* ... */
-    }
-    ~Kernel()
-    {
-        if (program)
-            program->removeAllShaders();
-        safeDelete(fragmentShader);
-        safeDelete(vertexShader);
-        safeDelete(program);
-    }
-    bool setShaders(const QString &vs, const QString &fs) {
-        if (vs.isEmpty() || fs.isEmpty())
-            return false;
-        bool ok = true;
-        try {
-            ok = vertexShader->compileSourceCode(vs);
-            qDebug() << "VERTEX SHADER COMPILED:" << vertexShader->isCompiled();
-            qDebug() << "VERTEX SHADER COMPILATION LOG:" << vertexShader->log();
-            ok = fragmentShader->compileSourceCode(fs);
-            qDebug() << "FRAGMENT SHADER COMPILED:" << fragmentShader->isCompiled();
-            qDebug() << "FRAGMENT SHADER COMPILATION LOG:" << fragmentShader->log();
-        }
-        catch (...) {
-            qFatal("memory allocation error");
-            ok = false;
-        }
-        if (ok) {
-            program->removeAllShaders();
-            program->addShader(vertexShader);
-            program->addShader(fragmentShader);
-            program->link();
-            program->bindAttributeLocation("aVertex", AVERTEX);
-            program->bindAttributeLocation("aTexCoord", ATEXCOORD);
-            program->bind();
-            program->enableAttributeArray(AVERTEX);
-            program->enableAttributeArray(ATEXCOORD);
-            program->setAttributeArray(AVERTEX, Vertices);
-            uLocResolution = program->uniformLocation("uResolution");
-            uLocTexture = program->uniformLocation("uTexture");
-            uLocGazePoint = program->uniformLocation("uGazePoint");
-            uLocPeepholeRadius = program->uniformLocation("uPeepholeRadius");
-        }
-        return ok;
-    }
-    QGLShaderProgram *program;
-    QGLShader *fragmentShader;
-    QGLShader *vertexShader;
-    int uLocResolution;
-    int uLocGazePoint;
-    int uLocTexture;
-    int uLocPeepholeRadius;
-
-    bool isFunctional(void) const {
-        return program != NULL && program->isLinked();
-    }
-
-    enum { AVERTEX, ATEXCOORD };
-
-    static const QVector2D TexCoords[4];
-    static const QVector2D TexCoords4FBO[4];
-    static const QVector2D Vertices[4];
-
-};
-
-const QVector2D Kernel::TexCoords[4] =
-{
-    QVector2D(1, 0),
-    QVector2D(1, 1),
-    QVector2D(0, 0),
-    QVector2D(0, 1)
-};
-const QVector2D Kernel::TexCoords4FBO[4] =
-{
-    QVector2D(1, 1),
-    QVector2D(1, 0),
-    QVector2D(0, 1),
-    QVector2D(0, 0)
-};
-const QVector2D Kernel::Vertices[4] =
-{
-    QVector2D( 1.0,  1.0),
-    QVector2D( 1.0, -1.0),
-    QVector2D(-1.0,  1.0),
-    QVector2D(-1.0, -1.0)
-};
-
-
-typedef QVector<Kernel *> KernelList;
-
 
 class RenderWidgetPrivate {
 public:
