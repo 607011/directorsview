@@ -122,12 +122,12 @@ void RenderWidget::paintGL(void)
         emit ready();
     }
 
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+
     if (d->fbo == NULL)
         return;
 
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);
     d->fbo->bind();
