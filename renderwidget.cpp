@@ -126,19 +126,18 @@ class RenderWidgetPrivate {
 public:
     explicit RenderWidgetPrivate(void)
         : firstPaintEventPending(true)
-        , fbo4Cascade(NULL)
-        , fbo4ResultImage(NULL)
+        , fbo(NULL)
         , textureHandle(0)
         , glVersionMajor(0)
         , glVersionMinor(0)
         , scale(1.0)
+        , peepholeRadius(0.153846f) // 0.0 .. 1.0
     { /* ... */ }
     QImage img;
     QColor backgroundColor;
     bool firstPaintEventPending;
     KernelList kernels;
-    QGLFramebufferObject* fbo4Cascade;
-    QGLFramebufferObject* fbo4ResultImage;
+    QGLFramebufferObject* fbo;
     GLuint textureHandle;
     QSizeF resolution;
     QRect viewport;
@@ -146,11 +145,11 @@ public:
     GLint glVersionMinor;
     qreal scale;
     QPointF gazePoint;
+    GLfloat peepholeRadius;
 
     virtual ~RenderWidgetPrivate()
     {
-        safeDelete(fbo4Cascade);
-        safeDelete(fbo4ResultImage);
+        safeDelete(fbo);
     }
 };
 
@@ -166,28 +165,12 @@ RenderWidget::RenderWidget(QWidget *parent)
 }
 
 
-void RenderWidget::makeImageFBO(void)
-{
-    Q_D(RenderWidget);
-    makeCurrent();
-    if (d->fbo4ResultImage == NULL || d->fbo4ResultImage->size() != d->img.size())
-        safeRenew(d->fbo4ResultImage, new QGLFramebufferObject(d->img.size()));
-}
-
-
-void RenderWidget::makeFilterCascadeFBO(void)
-{
-    Q_D(RenderWidget);
-    makeCurrent();
-    if (d->fbo4Cascade == NULL || d->fbo4Cascade->size() != d->img.size())
-        safeRenew(d->fbo4Cascade, new QGLFramebufferObject(d->img.size()));
-}
-
-
 void RenderWidget::makeFBOs(void)
 {
-    makeImageFBO();
-    makeFilterCascadeFBO();
+    Q_D(RenderWidget);
+    makeCurrent();
+    if (d->fbo == NULL || d->fbo->size() != d->img.size())
+        safeRenew(d->fbo, new QGLFramebufferObject(d->img.size()));
 }
 
 
@@ -212,7 +195,6 @@ void RenderWidget::initializeGL(void)
     initializeGLFunctions();
     glGetIntegerv(GL_MAJOR_VERSION, &d->glVersionMajor);
     glGetIntegerv(GL_MINOR_VERSION, &d->glVersionMinor);
-    qDebug() << "RenderWidget::initializeGL() -> OpenGL" << d->glVersionMajor << "." << d->glVersionMinor;
     qglClearColor(d->backgroundColor);
     glEnable(GL_TEXTURE_2D);
     glDepthMask(GL_FALSE);
@@ -253,41 +235,31 @@ void RenderWidget::paintGL(void)
 {
     Q_D(RenderWidget);
     if (d->firstPaintEventPending) {
-        glGetIntegerv(GL_MAJOR_VERSION, &d->glVersionMajor);
-        glGetIntegerv(GL_MINOR_VERSION, &d->glVersionMinor);
         d->firstPaintEventPending = false;
+        // makeFBOs();
         emit ready();
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
 
     // draw onto screen
+    glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, d->textureHandle);
     foreach (Kernel *k, d->kernels) {
         if (!k->isFunctional())
             break;
         k->program->setUniformValue(k->uLocResolution, d->resolution);
         k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
+        k->program->setUniformValue(k->uLocPeepholeRadius, d->peepholeRadius);
         k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords);
         k->program->bind();
+//        if (d->fbo)
+//            d->fbo->bind();
         glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, d->textureHandle);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    }
-
-    // draw into FBO
-    foreach (Kernel *k, d->kernels) {
-        if (!k->isFunctional())
-            break;
-        glViewport(0, 0, d->fbo4Cascade->width(), d->fbo4Cascade->height());
-        k->program->setUniformValue(k->uLocResolution, QSizeF(d->fbo4ResultImage->size()));
-        k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
-        k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords4FBO);
-        k->program->bind();
-        d->fbo4Cascade->bind();
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, d->fbo4Cascade->width(), d->fbo4Cascade->height(), 0);
-        d->fbo4Cascade->release();
     }
 
     emit frameReady();
@@ -296,15 +268,16 @@ void RenderWidget::paintGL(void)
 
 QImage RenderWidget::resultImage(void)
 {
-    Q_D(RenderWidget);
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    makeImageFBO();
-    d->fbo4ResultImage->bind();
-    glViewport(0, 0, d->img.width(), d->img.height());
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    d->fbo4ResultImage->release();
-    glPopAttrib();
-    return d->fbo4ResultImage->toImage();
+//    Q_D(RenderWidget);
+//    glPushAttrib(GL_ALL_ATTRIB_BITS);
+//    makeImageFBO();
+//    d->fbo->bind();
+//    glViewport(0, 0, d->img.width(), d->img.height());
+//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//    d->fbo->release();
+//    glPopAttrib();
+//    return d->fbo->toImage();
+    return QImage();
 }
 
 
@@ -331,6 +304,14 @@ void RenderWidget::setGazePoint(const QPointF &gazePoint)
 }
 
 
+void RenderWidget::setPeepholeRadius(GLfloat peepholeRadius)
+{
+    Q_D(RenderWidget);
+    d->peepholeRadius = peepholeRadius;
+    updateGL();
+}
+
+
 QString RenderWidget::glVersionString(void) const
 {
     return QString("%1.%2").arg(d_ptr->glVersionMajor).arg(d_ptr->glVersionMinor);
@@ -340,8 +321,8 @@ QString RenderWidget::glVersionString(void) const
 void RenderWidget::updateViewport(int w, int h)
 {
     Q_D(RenderWidget);
-    const QSizeF& glSize = d->scale * QSizeF(d->img.size());
-    const QPoint& topLeft = QPoint(w - glSize.width(), h - glSize.height()) / 2;
+    const QSizeF &glSize = d->scale * QSizeF(d->img.size());
+    const QPoint &topLeft = QPoint(w - glSize.width(), h - glSize.height()) / 2;
     d->viewport = QRect(topLeft, glSize.toSize());
     glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
     d->resolution = QSizeF(d->viewport.size());

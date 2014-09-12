@@ -26,7 +26,7 @@ public:
          , player(new QMediaPlayer)
          , playlist(new QMediaPlaylist)
      {
-         QUrl mediaFileUrl = QUrl::fromLocalFile("D:/Workspace/Eyex/Cruel Intentions 720p 4 MBit.m4v");
+         QUrl mediaFileUrl = QUrl::fromLocalFile("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v");
          playlist->addMedia(mediaFileUrl);
          playlist->setCurrentIndex(0);
          player->setPlaylist(playlist);
@@ -63,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
     QObject::connect(d->renderWidget, SIGNAL(ready()), SLOT(renderWidgetReady()));
+    QObject::connect(d->videoWidget, SIGNAL(virtualGazePointChanged(QPointF)), d->renderWidget, SLOT(setGazePoint(QPointF)));
 
     QObject::connect(ui->actionVisualizeGaze, SIGNAL(toggled(bool)), d->videoWidget, SLOT(setVisualisation(bool)));
     ui->gridLayout->addWidget(d->videoWidget);
@@ -78,10 +79,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::updateWindowTitle(void)
 {
-    setWindowTitle(tr("%1 %2 (OpenGL %3)")
-                   .arg(AppName)
-                   .arg(AppVersion)
-                   .arg(d_ptr->renderWidget->glVersionString()));
+    setWindowTitle(tr("%1 %2 (OpenGL %3)").arg(AppName).arg(AppVersion).arg(d_ptr->renderWidget->glVersionString()));
 }
 
 
@@ -160,6 +158,5 @@ void MainWindow::setFrame(const QImage &image)
 
 void MainWindow::renderWidgetReady(void)
 {
-    qDebug() << "MainWindow::renderWidgetReady()";
     updateWindowTitle();
 }

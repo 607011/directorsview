@@ -14,6 +14,7 @@ public:
     VideoWidgetPrivate()
         : surface(NULL)
         , visualizeGaze(false)
+        , leftMouseButtonPressed(false)
     { /* ... */ }
     ~VideoWidgetPrivate()
     {
@@ -24,6 +25,7 @@ public:
     QPoint position;
     Samples *gazeSamples;
     bool visualizeGaze;
+    bool leftMouseButtonPressed;
 };
 
 
@@ -31,6 +33,7 @@ VideoWidget::VideoWidget(QWidget *parent)
     : QWidget(parent)
     , d_ptr(new VideoWidgetPrivate)
 {
+    setFocus(Qt::MouseFocusReason);
     setAutoFillBackground(false);
     setAttribute(Qt::WA_NoSystemBackground, true);
     QPalette palette = this->palette();
@@ -117,6 +120,40 @@ void VideoWidget::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     d_ptr->surface->updateVideoRect();
+}
+
+
+void VideoWidget::mouseMoveEvent(QMouseEvent *e)
+{
+    Q_D(VideoWidget);
+    if (d->leftMouseButtonPressed) {
+        emit virtualGazePointChanged(QPointF(qreal(e->pos().x()) / width(), qreal(e->pos().y()) / height()));
+    }
+    e->accept();
+}
+
+
+void VideoWidget::mousePressEvent(QMouseEvent *e)
+{
+    Q_D(VideoWidget);
+    switch (e->button()) {
+    case Qt::LeftButton:
+        d->leftMouseButtonPressed = true;
+        break;
+    }
+    e->accept();
+}
+
+
+void VideoWidget::mouseReleaseEvent(QMouseEvent *e)
+{
+    Q_D(VideoWidget);
+    switch (e->button()) {
+    case Qt::LeftButton:
+        d->leftMouseButtonPressed = false;
+        break;
+    }
+    e->accept();
 }
 
 

@@ -45,6 +45,7 @@ signals:
 public slots:
     void setFrame(const QImage &);
     void setGazePoint(const QPointF &);
+    void setPeepholeRadius(GLfloat);
 
 protected:
     void resizeEvent(QResizeEvent *);
@@ -56,7 +57,7 @@ protected:
 private: // methods
     void updateViewport(const QSize&);
     void updateViewport(int w, int h);
-    void makeImageFBO(void);
+    void makeFBOs();
 
 private:
     QScopedPointer<RenderWidgetPrivate> d_ptr;

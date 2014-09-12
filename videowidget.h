@@ -8,8 +8,10 @@
 #include "eyexhost.h"
 
 #include <QWidget>
-#include <QPoint>
+#include <QPointF>
 #include <QScopedPointer>
+#include <QMouseEvent>
+
 
 class VideoWidgetPrivate;
 
@@ -30,9 +32,15 @@ public:
 public slots:
     void setVisualisation(bool);
 
+signals:
+    void virtualGazePointChanged(QPointF);
+
 protected:
     void paintEvent(QPaintEvent *event);
     void resizeEvent(QResizeEvent *event);
+    void mouseMoveEvent(QMouseEvent*);
+    void mousePressEvent(QMouseEvent*);
+    void mouseReleaseEvent(QMouseEvent*);
 
 private:
     QScopedPointer<VideoWidgetPrivate> d_ptr;
