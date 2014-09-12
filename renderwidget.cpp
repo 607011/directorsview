@@ -21,7 +21,6 @@ public:
         , textureHandle(0)
         , glVersionMajor(0)
         , glVersionMinor(0)
-        , scale(1.0)
         , gazePoint(0.5, 0.5)
         , peepholeRadius(0.4f) // 0.0 .. 1.0
     { /* ... */ }
@@ -35,7 +34,6 @@ public:
     QRect viewport;
     GLint glVersionMajor;
     GLint glVersionMinor;
-    qreal scale;
     QPointF gazePoint;
     GLfloat peepholeRadius;
 
@@ -216,9 +214,9 @@ QString RenderWidget::glVersionString(void) const
 void RenderWidget::updateViewport(int w, int h)
 {
     Q_D(RenderWidget);
-    const QSizeF &glSize = d->scale * QSizeF(d->img.size());
-    const QPoint &topLeft = QPoint(w - glSize.width(), h - glSize.height()) / 2;
-    d->viewport = QRect(topLeft, glSize.toSize());
+    const QSizeF &size = QSizeF(d->img.size());
+    const QPoint &topLeft = QPoint(w - size.width(), h - size.height()) / 2;
+    d->viewport = QRect(topLeft, size.toSize());
     glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());
     d->resolution = QSizeF(d->viewport.size());
     foreach (Kernel *k, d->kernels) {
