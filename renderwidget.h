@@ -21,16 +21,10 @@ class RenderWidget : public QGLWidget, protected QGLFunctions
     Q_OBJECT
 public:
     explicit RenderWidget(QWidget *parent = NULL);
-
     virtual QSize minimumSizeHint(void) const { return QSize(240, 160); }
     virtual QSize sizeHint(void) const  { return QSize(640, 480); }
-
     void updateViewport(void);
-
     QString glVersionString(void) const;
-
-    QImage resultImage(void);
-
 
 signals:
     void ready(void);
@@ -38,7 +32,6 @@ signals:
     void vertexShaderError(QString);
     void fragmentShaderError(QString);
     void linkerError(QString);
-
 
 public slots:
     void setFrame(const QImage &);
@@ -50,7 +43,6 @@ protected:
     void initializeGL(void);
     void resizeGL(int, int);
     void paintGL(void);
-
 
 private: // methods
     void updateViewport(const QSize&);

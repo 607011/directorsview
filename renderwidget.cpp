@@ -150,21 +150,6 @@ void RenderWidget::paintGL(void)
 }
 
 
-QImage RenderWidget::resultImage(void)
-{
-//    Q_D(RenderWidget);
-//    glPushAttrib(GL_ALL_ATTRIB_BITS);
-//    makeImageFBO();
-//    d->fbo->bind();
-//    glViewport(0, 0, d->img.width(), d->img.height());
-//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//    d->fbo->release();
-//    glPopAttrib();
-//    return d->fbo->toImage();
-    return QImage();
-}
-
-
 void RenderWidget::setFrame(const QImage &image)
 {
     Q_D(RenderWidget);
