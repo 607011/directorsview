@@ -49,3 +49,17 @@ OTHER_FILES += \
     shaders/fade2black.frag \
     shaders/foo.vert \
     default.frag
+
+
+QTFFMPEGWRAPPER_SOURCE_PATH = $$PWD/qtffmpegwrapper
+FFMPEG_LIBRARY_PATH = $$PWD/qtffmpegwrapper/lib/x86
+FFMPEG_INCLUDE_PATH = $$QTFFMPEGWRAPPER_SOURCE_PATH
+SOURCES += $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoEncoder.cpp \
+    $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoDecoder.cpp
+HEADERS += $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoEncoder.h \
+    $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoDecoder.h
+LIBS += -lavutil -lavcodec -lavformat -lswscale
+LIBS += -L$$FFMPEG_LIBRARY_PATH
+INCLUDEPATH += QVideoEncoder
+INCLUDEPATH += $$FFMPEG_INCLUDE_PATH
+DEFINES += __STDC_CONSTANT_MACROS
