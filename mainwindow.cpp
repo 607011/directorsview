@@ -122,6 +122,7 @@ void MainWindow::restoreSettings(void)
     QSettings settings(Company, AppName);
     restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
     ui->actionVisualizeGaze->setChecked(settings.value("MainWindow/visualizeGaze", true).toBool());
+    ui->actionAutoplayVideo->setChecked(settings.value("MainWindow/autoplayVideo", false).toBool());
     d->lastOpenDir = settings.value("MainWindow/lastOpenDir").toString();
     d->currentVideoFilename = settings.value("MainWindow/lastVideo").toString();
     if (!d->currentVideoFilename.isEmpty())
@@ -138,6 +139,7 @@ void MainWindow::saveSettings(void)
     QSettings settings(Company, AppName);
     settings.setValue("MainWindow/geometry", saveGeometry());
     settings.setValue("MainWindow/visualizeGaze", ui->actionVisualizeGaze->isChecked());
+    settings.setValue("MainWindow/autoplayVideo", ui->actionAutoplayVideo->isChecked());
     settings.setValue("MainWindow/lastOpenDir", d->lastOpenDir);
     settings.setValue("MainWindow/lastVideo", d->currentVideoFilename);
     settings.setValue("RenderWidget/geometry", d->renderWidget->saveGeometry());
@@ -211,7 +213,8 @@ void MainWindow::loadVideo(const QString &filename)
     d->player->setVideoOutput(d->videoWidget->videoSurface());
     d->videoWidget->setSamples(&d->gazeSamples);
     d->playButton->setEnabled(true);
-    play();
+    if (ui->actionAutoplayVideo->isChecked())
+        play();
 }
 
 

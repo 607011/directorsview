@@ -16,7 +16,7 @@
 class RenderWidgetPrivate {
 public:
     explicit RenderWidgetPrivate(void)
-        : firstPaintEventPending(true)
+        : firstPaintEvent(true)
         , fbo(NULL)
         , textureHandle(0)
         , glVersionMajor(0)
@@ -26,7 +26,7 @@ public:
     { /* ... */ }
     QImage img;
     QColor backgroundColor;
-    bool firstPaintEventPending;
+    bool firstPaintEvent;
     KernelList kernels;
     QGLFramebufferObject* fbo;
     GLuint textureHandle;
@@ -117,8 +117,8 @@ void RenderWidget::initializeGL(void)
 void RenderWidget::paintGL(void)
 {
     Q_D(RenderWidget);
-    if (d->firstPaintEventPending) {
-        d->firstPaintEventPending = false;
+    if (d->firstPaintEvent) {
+        d->firstPaintEvent = false;
         emit ready();
     }
 
@@ -135,6 +135,7 @@ void RenderWidget::paintGL(void)
         if (k->isFunctional()) {
             k->program->setUniformValue(k->uLocGazePoint, d->gazePoint);
             k->program->setUniformValue(k->uLocPeepholeRadius, d->peepholeRadius);
+            k->program->setUniformValue(k->uLocResolution, d->resolution);
             k->program->setAttributeArray(Kernel::ATEXCOORD, Kernel::TexCoords4FBO);
             k->program->bind();
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -155,11 +156,6 @@ void RenderWidget::setFrame(const QImage &image)
     if (!image.isNull()) {
         d->img = image.convertToFormat(QImage::Format_ARGB32);
         makeFBO();
-    }
-    foreach (Kernel *k, d->kernels) {
-        if (!k->isFunctional())
-            break;
-        k->program->setUniformValue(k->uLocResolution, d->resolution);
     }
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);

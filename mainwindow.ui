@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="presentTab">
        <attribute name="title">
@@ -91,6 +91,7 @@
      <string>Options</string>
     </property>
     <addaction name="actionVisualizeGaze"/>
+    <addaction name="actionAutoplayVideo"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
@@ -123,6 +124,14 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionAutoplayVideo">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Autoplay video</string>
    </property>
   </action>
  </widget>
