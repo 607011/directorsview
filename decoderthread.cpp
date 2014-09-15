@@ -32,7 +32,8 @@ bool DecoderThread::openVideo(const QString &filename)
 
 void DecoderThread::abort(void)
 {
-    d_ptr->doAbort = true;
+    Q_D(DecoderThread);
+    d->doAbort = true;
     wait(5*1000);
 }
 
@@ -52,4 +53,5 @@ void DecoderThread::run(void)
             break;
         emit frameReady(img);
     }
+    d->decoder.close();
 }

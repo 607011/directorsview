@@ -93,11 +93,10 @@ void VideoWidget::paintEvent(QPaintEvent *event)
     else {
         painter.fillRect(event->rect(), QColor(60, 60, 60));
     }
-    if (d->visualizeGaze) {
+    if (d->visualizeGaze && d->gazeSamples != NULL) {
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setCompositionMode(QPainter::CompositionMode_Difference);
         painter.setPen(Qt::transparent);
-        Q_ASSERT(d->gazeSamples != NULL);
         const int nSamples = d->gazeSamples->count();
         const int maxSamples = qMin(nSamples, 10);
         QPointF sum;

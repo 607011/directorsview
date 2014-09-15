@@ -150,6 +150,13 @@ void RenderWidget::paintGL(void)
 }
 
 
+void RenderWidget::closeEvent(QCloseEvent *e)
+{
+    emit closed();
+    e->accept();
+}
+
+
 void RenderWidget::setFrame(const QImage &image)
 {
     Q_D(RenderWidget);

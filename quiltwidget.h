@@ -7,6 +7,7 @@
 #include <QWidget>
 #include <QScopedPointer>
 #include <QPaintEvent>
+#include <QCloseEvent>
 
 class QuiltWidgetPrivate;
 
@@ -15,7 +16,7 @@ class QuiltWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit QuiltWidget(QWidget *parent = 0);
+    explicit QuiltWidget(QWidget *parent = NULL);
     ~QuiltWidget();
     virtual QSize minimumSizeHint(void) const;
     virtual QSize sizeHint(void) const;
@@ -24,8 +25,12 @@ public:
 public slots:
     void addImage(const QImage &);
 
+signals:
+    void closed(void);
+
 protected:
-    void paintEvent(QPaintEvent*);
+    void paintEvent(QPaintEvent *);
+    void closeEvent(QCloseEvent *);
 
 private:
     QScopedPointer<QuiltWidgetPrivate> d_ptr;

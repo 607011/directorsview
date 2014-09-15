@@ -93,8 +93,14 @@
     <addaction name="actionVisualizeGaze"/>
     <addaction name="actionAutoplayVideo"/>
    </widget>
+   <widget class="QMenu" name="menuWindows">
+    <property name="title">
+     <string>Windows</string>
+    </property>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
+   <addaction name="menuWindows"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -132,6 +138,28 @@
    </property>
    <property name="text">
     <string>Autoplay video</string>
+   </property>
+  </action>
+  <action name="actionRenderWidget">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Render widget</string>
+   </property>
+  </action>
+  <action name="actionQuiltWidget">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Quilt widget</string>
    </property>
   </action>
  </widget>

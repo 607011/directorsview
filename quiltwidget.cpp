@@ -99,3 +99,10 @@ void QuiltWidget::paintEvent(QPaintEvent *)
     QPainter p(this);
     p.drawPixmap(0, 0, d->quilt);
 }
+
+
+void QuiltWidget::closeEvent(QCloseEvent *e)
+{
+    emit closed();
+    e->accept();
+}

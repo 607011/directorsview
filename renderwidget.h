@@ -11,6 +11,7 @@
 #include <QString>
 #include <QImage>
 #include <QResizeEvent>
+#include <QCloseEvent>
 #include <QScopedPointer>
 
 
@@ -32,6 +33,7 @@ signals:
     void vertexShaderError(QString);
     void fragmentShaderError(QString);
     void linkerError(QString);
+    void closed(void);
 
 public slots:
     void setFrame(const QImage &);
@@ -43,6 +45,7 @@ protected:
     void initializeGL(void);
     void resizeGL(int, int);
     void paintGL(void);
+    void closeEvent(QCloseEvent *);
 
 private: // methods
     void updateViewport(const QSize&);

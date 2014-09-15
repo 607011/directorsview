@@ -79,8 +79,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
     QObject::connect(d->decoderThread, SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
-    // QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
-    // QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
+    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
+    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
     QObject::connect(d->renderWidget, SIGNAL(ready()), SLOT(renderWidgetReady()));
     QObject::connect(d->videoWidget, SIGNAL(virtualGazePointChanged(QPointF)), d->renderWidget, SLOT(setGazePoint(QPointF)));
 
@@ -91,8 +91,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->presentGridLayout->addWidget(d->videoWidget, 0, 0);
     ui->presentGridLayout->addLayout(controlLayout, 1, 0);
     d->videoWidget->show();
-    d->quiltWidget->show();
     d->renderWidget->show();
+    d->quiltWidget->show();
 
     QObject::connect(d->player, SIGNAL(positionChanged(qint64)), SLOT(positionChanged(qint64)));
     QObject::connect(d->player, SIGNAL(durationChanged(qint64)), SLOT(durationChanged(qint64)));
@@ -129,7 +129,9 @@ void MainWindow::restoreSettings(void)
         loadVideo(d->currentVideoFilename);
     d->videoWidget->setVisualisation(ui->actionVisualizeGaze->isChecked());
     d->renderWidget->restoreGeometry(settings.value("RenderWidget/geometry").toByteArray());
+    // d->renderWidget->setVisible(settings.value("RenderWidget/visible", true).toBool());
     d->quiltWidget->restoreGeometry(settings.value("QuiltWidget/geometry").toByteArray());
+    // d->quiltWidget->setVisible(settings.value("QuiltWidget/visible", true).toBool());
 }
 
 
@@ -143,15 +145,18 @@ void MainWindow::saveSettings(void)
     settings.setValue("MainWindow/lastOpenDir", d->lastOpenDir);
     settings.setValue("MainWindow/lastVideo", d->currentVideoFilename);
     settings.setValue("RenderWidget/geometry", d->renderWidget->saveGeometry());
+    settings.setValue("RenderWidget/visible", d->renderWidget->isVisible());
     settings.setValue("QuiltWidget/geometry", d->quiltWidget->saveGeometry());
+    settings.setValue("QuiltWidget/visible", d->quiltWidget->isVisible());
 }
 
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
     Q_D(MainWindow);
-    d_ptr->renderWidget->close();
-    d_ptr->quiltWidget->close();
+    d->decoderThread->abort();
+    d->renderWidget->close();
+    d->quiltWidget->close();
     if (d->gazeSamples.count() > 0) {
         statusBar()->showMessage("Writing log file ...", 3000);
         QFile logFile("gaze.log");
@@ -199,11 +204,13 @@ void MainWindow::renderWidgetReady(void)
 void MainWindow::loadVideo(const QString &filename)
 {
     Q_D(MainWindow);
-//    d->decoderThread->openVideo(filename);
-//    d->decoderThread->start();
-//    return;
+#if 1
+    d->decoderThread->openVideo(filename);
+    d->decoderThread->start();
+    return;
+#else
     QUrl mediaFileUrl = QUrl::fromLocalFile(filename);
-    statusBar()->showMessage(tr("Playing %1 ...").arg(mediaFileUrl.toString()), 5000);
+    statusBar()->showMessage(tr("Loaded '%1'.").arg(mediaFileUrl.toString()), 5000);
     d->playlist->clear();
     d->playlist->addMedia(mediaFileUrl);
     d->playlist->setCurrentIndex(0);
@@ -215,6 +222,7 @@ void MainWindow::loadVideo(const QString &filename)
     d->playButton->setEnabled(true);
     if (ui->actionAutoplayVideo->isChecked())
         play();
+#endif
 }
 
 
