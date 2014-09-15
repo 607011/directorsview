@@ -8,11 +8,12 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QDir>
-#include <QSlider>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QHBoxLayout>
 
 #include "main.h"
+#include "sample.h"
 #include "decoderthread.h"
 #include "renderwidget.h"
 #include "quiltwidget.h"
@@ -47,9 +48,12 @@ public:
      QMediaPlayer *player;
      QMediaPlaylist *playlist;
      QPushButton *playButton;
-     QSlider *positionSlider;
+     QProgressBar *positionSlider;
      QString currentVideoFilename;
-     QString lastOpenDir;
+     QString lastOpenVideoDir;
+     QString currentGazeDataFilename;
+     QString lastOpenGazeDataDir;
+     QString lastSaveDir;
      DecoderThread *decoderThread;
 };
 
@@ -68,9 +72,8 @@ MainWindow::MainWindow(QWidget *parent)
     d->playButton->setMinimumWidth(50);
     d->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 
-    d->positionSlider = new QSlider(Qt::Horizontal);
-    d->positionSlider->setEnabled(false);
-    d->positionSlider->setRange(0, 0);
+    d->positionSlider = new QProgressBar;
+    d->positionSlider->setRange(0, 100);
 
     QBoxLayout *controlLayout = new QHBoxLayout;
     controlLayout->setMargin(0);
@@ -79,6 +82,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
     QObject::connect(d->decoderThread, SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
+    QObject::connect(d->decoderThread, SIGNAL(positionChanged(qint64)), SLOT(positionChanged(qint64)));
+    QObject::connect(d->decoderThread, SIGNAL(durationChanged(qint64)), SLOT(durationChanged(qint64)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
     QObject::connect(d->renderWidget, SIGNAL(ready()), SLOT(renderWidgetReady()));
@@ -86,6 +91,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QObject::connect(ui->actionVisualizeGaze, SIGNAL(toggled(bool)), d->videoWidget, SLOT(setVisualisation(bool)));
     QObject::connect(ui->actionOpenVideo, SIGNAL(triggered()), SLOT(openVideo()));
+    QObject::connect(ui->actionOpenGazeData, SIGNAL(triggered()), SLOT(openGazeData()));
     QObject::connect(ui->actionExit, SIGNAL(triggered()), SLOT(close()));
 
     ui->presentGridLayout->addWidget(d->videoWidget, 0, 0);
@@ -100,7 +106,7 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(d->player, SIGNAL(error(QMediaPlayer::Error)), SLOT(handleError()));
     QObject::connect(d->playButton, SIGNAL(clicked()), SLOT(play()));
 
-    restoreSettings();
+    restoreSettings();    
 }
 
 
@@ -123,8 +129,10 @@ void MainWindow::restoreSettings(void)
     restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
     ui->actionVisualizeGaze->setChecked(settings.value("MainWindow/visualizeGaze", true).toBool());
     ui->actionAutoplayVideo->setChecked(settings.value("MainWindow/autoplayVideo", false).toBool());
-    d->lastOpenDir = settings.value("MainWindow/lastOpenDir").toString();
-    d->currentVideoFilename = settings.value("MainWindow/lastVideo").toString();
+    d->lastOpenVideoDir = settings.value("MainWindow/lastOpenVideoDir").toString();
+    d->lastOpenGazeDataDir = settings.value("MainWindow/lastOpenGazeDataDir").toString();
+    d->currentVideoFilename = settings.value("MainWindow/lastVideoFilename").toString();
+    d->currentGazeDataFilename = settings.value("MainWindow/currentGazeDataFilename").toString();
     if (!d->currentVideoFilename.isEmpty())
         loadVideo(d->currentVideoFilename);
     d->videoWidget->setVisualisation(ui->actionVisualizeGaze->isChecked());
@@ -142,8 +150,11 @@ void MainWindow::saveSettings(void)
     settings.setValue("MainWindow/geometry", saveGeometry());
     settings.setValue("MainWindow/visualizeGaze", ui->actionVisualizeGaze->isChecked());
     settings.setValue("MainWindow/autoplayVideo", ui->actionAutoplayVideo->isChecked());
-    settings.setValue("MainWindow/lastOpenDir", d->lastOpenDir);
-    settings.setValue("MainWindow/lastVideo", d->currentVideoFilename);
+    settings.setValue("MainWindow/lastOpenVideoDir", d->lastOpenVideoDir);
+    settings.setValue("MainWindow/lastOpenGazeDataDir", d->lastOpenGazeDataDir);
+    settings.setValue("MainWindow/lastSaveDir", d->lastSaveDir);
+    settings.setValue("MainWindow/lastVideoFilename", d->currentVideoFilename);
+    settings.setValue("MainWindow/currentGazeDataFilename", d->currentGazeDataFilename);
     settings.setValue("RenderWidget/geometry", d->renderWidget->saveGeometry());
     settings.setValue("RenderWidget/visible", d->renderWidget->isVisible());
     settings.setValue("QuiltWidget/geometry", d->quiltWidget->saveGeometry());
@@ -161,9 +172,8 @@ void MainWindow::closeEvent(QCloseEvent *)
         statusBar()->showMessage("Writing log file ...", 3000);
         QFile logFile("gaze.log");
         logFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
-        const qint64 t0 = d->gazeSamples.first().timestamp;
         foreach (Sample sample, d->gazeSamples)
-            logFile.write(QString("%1;%2;%3\n").arg(sample.timestamp - t0).arg(sample.pos.x()).arg(sample.pos.y()).toLatin1());
+            logFile.write(QString("%1;%2;%3\n").arg(sample.timestamp).arg(sample.pos.x()).arg(sample.pos.y()).toLatin1());
         logFile.close();
     }
     saveSettings();
@@ -173,8 +183,8 @@ void MainWindow::closeEvent(QCloseEvent *)
 void MainWindow::getGazeSample(const Sample &sample)
 {
     Q_D(MainWindow);
-    QPoint localPos = d->videoWidget->mapFromGlobal(sample.pos.toPoint());
-    QPointF relativePos = QPointF(
+    const QPoint &localPos = d->videoWidget->mapFromGlobal(sample.pos.toPoint());
+    const QPointF &relativePos = QPointF(
                 qreal(localPos.x()) / d->videoWidget->width(),
                 qreal(localPos.y()) / d->videoWidget->height());
     if (d->player->state() == QMediaPlayer::PlayingState)
@@ -198,6 +208,39 @@ void MainWindow::setFrame(const QImage &image)
 void MainWindow::renderWidgetReady(void)
 {
     updateWindowTitle();
+    loadGazeData("D:/Workspace/Eyex-Desktop_Qt_5_3_0_MSVC2012_OpenGL_32bit-Debug/gaze.log");
+    loadVideo("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v");
+}
+
+
+void MainWindow::loadGazeData(const QString &filename)
+{
+    Q_D(MainWindow);
+    QFile f(filename);
+    f.open(QIODevice::Text | QIODevice::ReadOnly);
+    if (f.isReadable()) {
+        d->gazeSamples.empty();
+        while (!f.atEnd()) {
+            bool ok;
+            const QString &line = f.readLine();
+            if (line.isEmpty())
+                continue;
+            const QStringList &data = line.split(';');
+            if (data.count() != 3)
+                continue;
+            qint64 t = data.at(0).toLongLong(&ok);
+            if (!ok)
+                continue;
+            qreal x = data.at(1).toDouble(&ok);
+            if (!ok)
+                continue;
+            qreal y = data.at(2).toDouble(&ok);
+            if (!ok)
+                continue;
+            d->gazeSamples.append(Sample(QPointF(x, y), t));
+        }
+    }
+    f.close();
 }
 
 
@@ -205,8 +248,10 @@ void MainWindow::loadVideo(const QString &filename)
 {
     Q_D(MainWindow);
 #if 1
-    d->decoderThread->openVideo(filename);
-    d->decoderThread->start();
+    d->decoderThread->abort();
+    bool ok = d->decoderThread->openVideo(filename);
+    if (ok)
+        d->decoderThread->start();
     return;
 #else
     QUrl mediaFileUrl = QUrl::fromLocalFile(filename);
@@ -226,16 +271,31 @@ void MainWindow::loadVideo(const QString &filename)
 }
 
 
+void MainWindow::openGazeData(void)
+{
+    Q_D(MainWindow);
+    QString filename = QFileDialog::getOpenFileName(this,
+                                                    tr("Open gaze data"),
+                                                    d->lastOpenGazeDataDir,
+                                                    tr("Gaze data files (*.*)"));
+    if(!filename.isNull()) {
+        QFileInfo fi(filename);
+        d->lastOpenGazeDataDir = fi.absolutePath();
+        loadGazeData(filename);
+    }
+}
+
+
 void MainWindow::openVideo(void)
 {
     Q_D(MainWindow);
     QString filename = QFileDialog::getOpenFileName(this,
                                                     tr("Open video"),
-                                                    d->lastOpenDir,
+                                                    d->lastOpenVideoDir,
                                                     tr("Video files (*.*)"));
     if(!filename.isNull()) {
         QFileInfo fi(filename);
-        d->lastOpenDir = fi.absolutePath();
+        d->lastOpenVideoDir = fi.absolutePath();
         loadVideo(filename);
     }
 }
@@ -244,6 +304,7 @@ void MainWindow::openVideo(void)
 void MainWindow::positionChanged(qint64 position)
 {
     Q_D(MainWindow);
+    // qDebug() << "MainWindow::positionChanged(" << position << ")";
     d->positionSlider->setValue((int)position);
 }
 
@@ -251,6 +312,7 @@ void MainWindow::positionChanged(qint64 position)
 void MainWindow::durationChanged(qint64 duration)
 {
     Q_D(MainWindow);
+    qDebug() << "MainWindow::durationChanged(" << duration << ")";
     d->positionSlider->setMaximum((int)duration);
 }
 

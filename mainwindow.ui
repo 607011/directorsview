@@ -16,56 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="presentTab">
-       <attribute name="title">
-        <string>Present</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="presentGridLayout">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="processTab">
-       <attribute name="title">
-        <string>Process</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="processGridLayout"/>
-        </item>
-       </layout>
-      </widget>
-     </widget>
+     <layout class="QGridLayout" name="presentGridLayout"/>
     </item>
    </layout>
   </widget>
@@ -83,6 +34,7 @@
      <string>File</string>
     </property>
     <addaction name="actionOpenVideo"/>
+    <addaction name="actionOpenGazeData"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -160,6 +112,11 @@
    </property>
    <property name="text">
     <string>Quilt widget</string>
+   </property>
+  </action>
+  <action name="actionOpenGazeData">
+   <property name="text">
+    <string>Open gaze data ...</string>
    </property>
   </action>
  </widget>

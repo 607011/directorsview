@@ -1,10 +1,12 @@
 // Copyright (c) 2014 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
+#include "sample.h"
 #include "renderwidget.h"
 #include "util.h"
 #include "main.h"
 #include "kernel.h"
+#include "decoderthread.h"
 
 #include <QtCore/QDebug>
 #include <QtOpenGL>
@@ -17,14 +19,14 @@ class RenderWidgetPrivate {
 public:
     explicit RenderWidgetPrivate(void)
         : firstPaintEvent(true)
-        , fbo(NULL)
+        , fbo(nullptr)
         , textureHandle(0)
         , glVersionMajor(0)
         , glVersionMinor(0)
         , gazePoint(0.5, 0.5)
         , peepholeRadius(0.2f) // 0.0 .. 1.0
     { /* ... */ }
-    QImage img;
+    QSize frameSize;
     QColor backgroundColor;
     bool firstPaintEvent;
     KernelList kernels;
@@ -36,6 +38,7 @@ public:
     GLint glVersionMinor;
     QPointF gazePoint;
     GLfloat peepholeRadius;
+    Samples gazeSamples;
 
     virtual ~RenderWidgetPrivate()
     {
@@ -59,8 +62,8 @@ void RenderWidget::makeFBO(void)
 {
     Q_D(RenderWidget);
     makeCurrent();
-    if (d->fbo == NULL || d->fbo->size() != d->img.size())
-        safeRenew(d->fbo, new QGLFramebufferObject(d->img.size()));
+    if (d->fbo == nullptr || d->fbo->size() != d->frameSize)
+        safeRenew(d->fbo, new QGLFramebufferObject(d->frameSize));
 }
 
 
@@ -125,7 +128,7 @@ void RenderWidget::paintGL(void)
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 
-    if (d->fbo == NULL)
+    if (d->fbo == nullptr)
         return;
 
     glActiveTexture(GL_TEXTURE0);
@@ -161,12 +164,13 @@ void RenderWidget::setFrame(const QImage &image)
 {
     Q_D(RenderWidget);
     if (!image.isNull()) {
-        d->img = image.convertToFormat(QImage::Format_ARGB32);
+        d->frameSize = image.size();
         makeFBO();
     }
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, d->img.width(), d->img.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, d->img.bits());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
+    gFramesProduced.release();
     updateViewport();
 }
 
@@ -193,10 +197,17 @@ QString RenderWidget::glVersionString(void) const
 }
 
 
+void RenderWidget::setGazeSamples(const Samples &gazeSamples)
+{
+    Q_D(RenderWidget);
+    d->gazeSamples = gazeSamples;
+}
+
+
 void RenderWidget::updateViewport(int w, int h)
 {
     Q_D(RenderWidget);
-    const QSizeF &size = QSizeF(d->img.size());
+    const QSizeF &size = QSizeF(d->frameSize);
     const QPoint &topLeft = QPoint(w - size.width(), h - size.height()) / 2;
     d->viewport = QRect(topLeft, size.toSize());
     glViewport(d->viewport.x(), d->viewport.y(), d->viewport.width(), d->viewport.height());

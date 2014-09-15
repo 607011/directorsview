@@ -8,13 +8,17 @@
 #include <QImage>
 #include <QScopedPointer>
 
+#include "semaphores.h"
+
+
+
 class DecoderThreadPrivate;
 
 class DecoderThread : public QThread
 {
     Q_OBJECT
 public:
-    explicit DecoderThread(QObject *parent = NULL);
+    explicit DecoderThread(QObject *parent = nullptr);
 
     bool openVideo(const QString &filename);
     void abort(void);
@@ -24,8 +28,13 @@ protected:
 
 signals:
     void frameReady(QImage);
+    void positionChanged(qint64);
+    void durationChanged(qint64);
 
 public slots:
+
+private: // methods
+    int decode_packet(int &got_frame, bool cached);
 
 private:
     QScopedPointer<DecoderThreadPrivate> d_ptr;

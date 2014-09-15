@@ -12,8 +12,8 @@
 class VideoWidgetPrivate {
 public:
     VideoWidgetPrivate()
-        : surface(NULL)
-        , gazeSamples(NULL)
+        : surface(nullptr)
+        , gazeSamples(nullptr)
         , visualizeGaze(false)
         , leftMouseButtonPressed(false)
     { /* ... */ }
@@ -68,17 +68,11 @@ void VideoWidget::setVisualisation(bool enabled)
 }
 
 
-float easeInOut(float k) {
-    if ((k *= 2) < 1)
-        return 0.5 * k * k;
-    return -0.5 * (--k * (k - 2) - 1);
-}
-
-
 void VideoWidget::paintEvent(QPaintEvent *event)
 {
     Q_D(VideoWidget);
     QPainter painter(this);
+
     if (d_ptr->surface->isActive()) {
         const QRect videoRect = d_ptr->surface->videoRect();
         if (!videoRect.contains(event->rect())) {
@@ -93,7 +87,12 @@ void VideoWidget::paintEvent(QPaintEvent *event)
     else {
         painter.fillRect(event->rect(), QColor(60, 60, 60));
     }
-    if (d->visualizeGaze && d->gazeSamples != NULL) {
+    if (d->visualizeGaze && d->gazeSamples != nullptr) {
+        auto easeInOut = [](float k) -> float {
+            if ((k *= 2) < 1)
+                return 0.5 * k * k;
+            return -0.5 * (--k * (k - 2) - 1);
+        };
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setCompositionMode(QPainter::CompositionMode_Difference);
         painter.setPen(Qt::transparent);

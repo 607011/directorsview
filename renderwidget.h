@@ -14,6 +14,8 @@
 #include <QCloseEvent>
 #include <QScopedPointer>
 
+#include "sample.h"
+
 
 class RenderWidgetPrivate;
 
@@ -26,6 +28,7 @@ public:
     virtual QSize sizeHint(void) const  { return QSize(640, 480); }
     void updateViewport(void);
     QString glVersionString(void) const;
+    void setGazeSamples(const Samples&);
 
 signals:
     void ready(void);

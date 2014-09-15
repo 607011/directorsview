@@ -9,15 +9,6 @@ TEMPLATE = app
 DEFINES += FILTER_FADE_TO_BLACK=1
 DEFINES += _CRT_SECURE_NO_WARNINGS
 
-TOBII_EYEX_SDK_PATH = $$PWD/tobii-eyex-sdk
-
-QMAKE_LIBDIR += $$TOBII_EYEX_SDK_PATH/lib/x86 $$TOBII_EYEX_SDK_PATH/lib/x64
-INCLUDEPATH += $$TOBII_EYEX_SDK_PATH/include
-
-win32 {
-LIBS += Tobii.EyeX.Client.lib
-}
-
 SOURCES += main.cpp\
     mainwindow.cpp \
     eyexhost.cpp \
@@ -26,7 +17,9 @@ SOURCES += main.cpp\
     videowidget.cpp \
     renderwidget.cpp \
     kernel.cpp \
-    decoderthread.cpp
+    decoderthread.cpp \
+    encoderthread.cpp \
+    semaphores.cpp
 
 HEADERS  += mainwindow.h \
     eyexhost.h \
@@ -37,9 +30,12 @@ HEADERS  += mainwindow.h \
     util.h \
     main.h \
     kernel.h \
-    decoderthread.h
+    decoderthread.h \
+    encoderthread.h \
+    sample.h \
+    semaphores.h
 
-FORMS    += mainwindow.ui
+FORMS += mainwindow.ui
 
 RESOURCES += \
     eyex.qrc
@@ -54,15 +50,17 @@ OTHER_FILES += \
     default.frag
 
 
-QTFFMPEGWRAPPER_SOURCE_PATH = $$PWD/qtffmpegwrapper
-FFMPEG_LIBRARY_PATH = $$PWD/qtffmpegwrapper/lib/x86
-FFMPEG_INCLUDE_PATH = $$QTFFMPEGWRAPPER_SOURCE_PATH
-SOURCES += $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoEncoder.cpp \
-    $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoDecoder.cpp
-HEADERS += $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoEncoder.h \
-    $$QTFFMPEGWRAPPER_SOURCE_PATH/QVideoDecoder.h
-LIBS += -lavutil -lavcodec -lavformat -lswscale
-LIBS += -L$$FFMPEG_LIBRARY_PATH
-INCLUDEPATH += QVideoEncoder
-INCLUDEPATH += $$FFMPEG_INCLUDE_PATH
+### TOBII EYEX ###
+TOBII_EYEX_SDK_PATH = $$PWD/tobii-eyex-sdk
+QMAKE_LIBDIR += $$TOBII_EYEX_SDK_PATH/lib/x86 $$TOBII_EYEX_SDK_PATH/lib/x64
+INCLUDEPATH += $$TOBII_EYEX_SDK_PATH/include
+win32 {
+LIBS += Tobii.EyeX.Client.lib
+}
+
+
+### FFMPEG ###
+QMAKE_LIBDIR += $$PWD/ffmpeg/lib
+LIBS += avdevice.lib avutil.lib avcodec.lib avformat.lib swscale.lib
+INCLUDEPATH += $$PWD/ffmpeg/include
 DEFINES += __STDC_CONSTANT_MACROS

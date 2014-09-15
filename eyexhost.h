@@ -6,27 +6,8 @@
 
 #include <QObject>
 #include <QPoint>
-#include <QVector>
+#include "sample.h"
 #include "eyex\EyeX.h"
-
-class Sample {
-public:
-    Sample(void)
-        : timestamp(0)
-    { /* ... */ }
-    Sample(const QPointF &p, qint64 t)
-        : pos(p)
-        , timestamp(t)
-    { /* ... */ }
-    Sample(const Sample& other)
-        : pos(other.pos)
-        , timestamp(other.timestamp)
-    { /* ... */ }
-    QPointF pos;
-    qint64 timestamp;
-};
-
-typedef QVector<Sample> Samples;
 
 class EyeXHost : public QObject {
     Q_OBJECT

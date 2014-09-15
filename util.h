@@ -9,7 +9,7 @@ inline void safeDelete(T& a)
 {
     if (a)
         delete a;
-    a = 0;
+    a = nullptr;
 }
 
 template <class T>
@@ -17,7 +17,7 @@ inline void safeDeleteArray(T& a)
 {
     if (a)
         delete [] a;
-    a = 0;
+    a = nullptr;
 }
 
 template <class T>
@@ -33,9 +33,9 @@ inline void safeRenew(T& a, T obj)
 template <class T>
 void SafeRelease(T** ppT)
 {
-    if (*ppT != NULL) {
+    if (*ppT != nullptr) {
         (*ppT)->Release();
-        *ppT = NULL;
+        *ppT = nullptr;
     }
 }
 #endif
