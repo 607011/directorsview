@@ -18,7 +18,6 @@ SOURCES += main.cpp\
     renderwidget.cpp \
     kernel.cpp \
     decoderthread.cpp \
-    encoderthread.cpp \
     semaphores.cpp
 
 HEADERS  += mainwindow.h \
@@ -31,7 +30,6 @@ HEADERS  += mainwindow.h \
     main.h \
     kernel.h \
     decoderthread.h \
-    encoderthread.h \
     sample.h \
     semaphores.h
 
