@@ -34,7 +34,7 @@ signals:
 public slots:
 
 private: // methods
-    int decode_packet(int &got_frame, bool cached);
+    int decodePacket(int &got_frame, bool cached);
 
 private:
     QScopedPointer<DecoderThreadPrivate> d_ptr;
