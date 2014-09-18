@@ -10,8 +10,9 @@
 class VideoWidgetSurfacePrivate {
 public:
     VideoWidgetSurfacePrivate()
-        : widget(NULL)
+        : widget(nullptr)
         , imageFormat(QImage::Format_Invalid)
+        , videoFrameCount(0)
     { /* ... */ }
     ~VideoWidgetSurfacePrivate()
     { /* ... */ }
@@ -22,6 +23,7 @@ public:
     QImage image;
     QRect sourceRect;
     QVideoFrame currentFrame;
+    int videoFrameCount;
 };
 
 
@@ -30,6 +32,12 @@ VideoWidgetSurface::VideoWidgetSurface(QWidget *widget, QObject *parent)
     , d_ptr(new VideoWidgetSurfacePrivate)
 {
     d_ptr->widget = widget;
+}
+
+
+VideoWidgetSurface::~VideoWidgetSurface()
+{
+    // ...
 }
 
 
@@ -110,12 +118,12 @@ QRect VideoWidgetSurface::videoRect(void) const
 }
 
 
-void VideoWidgetSurface::updateVideoRect()
+void VideoWidgetSurface::updateVideoRect(void)
 {
     Q_D(VideoWidgetSurface);
     QSize size = surfaceFormat().sizeHint();
     size.scale(d->widget->size().boundedTo(size), Qt::KeepAspectRatio);
-    d->targetRect = QRect(QPoint(0, 0), size);
+    d->targetRect = QRect(QPoint(), size);
     d->targetRect.moveCenter(d->widget->rect().center());
 }
 
@@ -130,9 +138,10 @@ void VideoWidgetSurface::paint(QPainter *painter)
             painter->translate(0, -d->widget->height());
         }
         d->image = QImage(d->currentFrame.bits(), d->currentFrame.width(), d->currentFrame.height(), d->currentFrame.bytesPerLine(), d->imageFormat);
-        emit frameReady(d->image);
+        emit frameReady(d->image, d->videoFrameCount);
         painter->drawImage(d->targetRect, d->image, d->sourceRect);
         painter->setTransform(oldTransform);
         d->currentFrame.unmap();
+        ++d->videoFrameCount;
     }
 }

@@ -2,7 +2,6 @@
 // All rights reserved.
 
 #include <QtCore/QDebug>
-#include <QtConcurrent/QtConcurrent>
 
 #include "decoderthread.h"
 #include "util.h"
@@ -22,11 +21,12 @@ extern "C" {
 
 class DecoderThreadPrivate {
 public:
-    DecoderThreadPrivate(void)
+    explicit DecoderThreadPrivate(void)
         : doAbort(false)
         , fmtCtx(nullptr)
         , videoDecCtx(nullptr)
         , videoEncCtx(nullptr)
+        , videoEncBitrate(0)
         , w(0)
         , h(0)
         , videoStreamIdx(-1)
@@ -36,6 +36,7 @@ public:
         , videoFrameCount(0)
         , frame(av_frame_alloc())
         , frameRGB(av_frame_alloc())
+        , frameEnc(av_frame_alloc())
         , frameBuffer(nullptr)
     {
         memset(videoDstData, 0, 4 * sizeof(uint8_t *));
@@ -45,6 +46,7 @@ public:
     AVFormatContext *fmtCtx;
     AVCodecContext *videoDecCtx;
     AVCodecContext *videoEncCtx;
+    int videoEncBitrate;
     int w;
     int h;
     int videoStreamIdx;
@@ -54,13 +56,15 @@ public:
     int videoFrameCount;
     AVFrame *frame;
     AVFrame *frameRGB;
+    AVFrame *frameEnc;
     uint8_t *frameBuffer;
     AVPacket pkt;
+    AVPacket encPkt;
     uint8_t *videoDstData[4];
     int videoDstLinesize[4];
     int rc;
 
-    ~DecoderThreadPrivate() {
+    virtual ~DecoderThreadPrivate() {
         av_frame_free(&frame);
         av_frame_free(&frameRGB);
         av_freep(&videoDstData[0]);
@@ -125,6 +129,7 @@ void DecoderThread::abort(void)
 {
     Q_D(DecoderThread);
     d->doAbort = true;
+    // terminate();
     wait(5*1000);
 }
 
@@ -144,7 +149,7 @@ void DecoderThread::run(void)
         if (d->rc < 0)
             break;
         do {
-            int ret = decodePacket(gotFrame, false);
+            int ret = decodePacket(gotFrame);
             if (ret < 0)
                 break;
             d->pkt.data += ret;
@@ -152,18 +157,21 @@ void DecoderThread::run(void)
         } while (d->pkt.size > 0);
         av_free_packet(&origPkt);
     }
-    d->pkt.data = nullptr;
-    d->pkt.size = 0;
-    do {
-        decodePacket(gotFrame, true);
-    } while (gotFrame && !d->doAbort);
+    qDebug().nospace() << "DecoderThread " << (d->doAbort ? "canceled" : "finished decoding uncached frames") << ".";
+    if (!d->doAbort) {
+        d->pkt.data = nullptr;
+        d->pkt.size = 0;
+        do  {
+            decodePacket(gotFrame);
+        } while (gotFrame && !d->doAbort);
+    }
+    qDebug() << "DecoderThread ending ...";
 }
 
 
-int DecoderThread::decodePacket(int &gotFrame, bool cached)
+int DecoderThread::decodePacket(int &gotFrame)
 {
     Q_D(DecoderThread);
-    Q_UNUSED(cached);
     static const AVRational ms = {1, 1000};
     int ret = 0;
     int decoded = d->pkt.size;
@@ -174,7 +182,6 @@ int DecoderThread::decodePacket(int &gotFrame, bool cached)
     if (gotFrame) {
         qint64 t = av_rescale_q(d->pkt.pts, d->fmtCtx->streams[d->pkt.stream_index]->time_base, ms);
         emit positionChanged(t);
-        ++d->videoFrameCount;
         d->imgConvertCtx = sws_getCachedContext(d->imgConvertCtx, d->w, d->h, d->videoDecCtx->pix_fmt, d->w, d->h, AV_PIX_FMT_BGRA, SWS_BICUBIC, nullptr, nullptr, nullptr);
         if (d->imgConvertCtx == nullptr) {
             qFatal("Cannot initialize the conversion context!");
@@ -184,12 +191,15 @@ int DecoderThread::decodePacket(int &gotFrame, bool cached)
         QImage img(d->w, d->h, QImage::Format_ARGB32);
         for (int y = 0; y < d->h; ++y) {
             uint8_t *const dst  = img.scanLine(y);
+            if (!dst)
+                qFatal("Out of memory error.");
             const uint8_t *src = d->frameRGB->data[0] + y * d->frameRGB->linesize[0];
             memcpy(dst, src, 4 * d->w);
         }
         av_frame_unref(d->frame);
         gFramesProduced.acquire();
-        emit frameReady(img);
+        emit frameReady(img, d->videoFrameCount);
+        ++d->videoFrameCount;
     }
     return decoded;
 }

@@ -81,11 +81,11 @@ MainWindow::MainWindow(QWidget *parent)
     controlLayout->addWidget(d->positionSlider);
 
     QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
-    QObject::connect(d->decoderThread, SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
+    QObject::connect(d->decoderThread, SIGNAL(frameReady(QImage, int)), d->renderWidget, SLOT(setFrame(QImage, int)));
     QObject::connect(d->decoderThread, SIGNAL(positionChanged(qint64)), SLOT(positionChanged(qint64)));
     QObject::connect(d->decoderThread, SIGNAL(durationChanged(qint64)), SLOT(durationChanged(qint64)));
-    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), SLOT(setFrame(QImage)));
-    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage)), d->renderWidget, SLOT(setFrame(QImage)));
+    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage, int)), SLOT(setFrame(QImage, int)));
+    QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage, int)), d->renderWidget, SLOT(setFrame(QImage, int)));
     QObject::connect(d->renderWidget, SIGNAL(ready()), SLOT(renderWidgetReady()));
     QObject::connect(d->videoWidget, SIGNAL(virtualGazePointChanged(QPointF)), d->renderWidget, SLOT(setGazePoint(QPointF)));
 
@@ -143,6 +143,27 @@ void MainWindow::restoreSettings(void)
 }
 
 
+void MainWindow::saveGazeData(void)
+{
+    Q_D(MainWindow);
+    if (d->gazeSamples.count() > 0) {
+        statusBar()->showMessage("Writing log file ...", 3000);
+        saveGazeData("gazeData.log");
+    }
+}
+
+
+void MainWindow::saveGazeData(const QString &filename)
+{
+    Q_D(MainWindow);
+    QFile logFile(filename);
+    logFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
+    foreach (Sample sample, d->gazeSamples)
+        logFile.write(QString("%1;%2;%3\n").arg(sample.timestamp).arg(sample.pos.x()).arg(sample.pos.y()).toLatin1());
+    logFile.close();
+}
+
+
 void MainWindow::saveSettings(void)
 {
     Q_D(MainWindow);
@@ -162,21 +183,16 @@ void MainWindow::saveSettings(void)
 }
 
 
-void MainWindow::closeEvent(QCloseEvent *)
+void MainWindow::closeEvent(QCloseEvent *e)
 {
     Q_D(MainWindow);
+    qDebug() << "MainWindow::closeEvent()";
     d->decoderThread->abort();
     d->renderWidget->close();
     d->quiltWidget->close();
-    if (d->gazeSamples.count() > 0) {
-        statusBar()->showMessage("Writing log file ...", 3000);
-        QFile logFile("gaze.log");
-        logFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
-        foreach (Sample sample, d->gazeSamples)
-            logFile.write(QString("%1;%2;%3\n").arg(sample.timestamp).arg(sample.pos.x()).arg(sample.pos.y()).toLatin1());
-        logFile.close();
-    }
+    saveGazeData();
     saveSettings();
+    QMainWindow::closeEvent(e);
 }
 
 
@@ -193,9 +209,10 @@ void MainWindow::getGazeSample(const Sample &sample)
 }
 
 
-void MainWindow::setFrame(const QImage &image)
+void MainWindow::setFrame(const QImage &image, int frameCount)
 {
     Q_D(MainWindow);
+    Q_UNUSED(frameCount);
     if (d->gazeSamples.count() > 0) {
         const Sample &currentSample = d->gazeSamples.last();
         QPoint pos(currentSample.pos.x() * image.width() - d->quiltWidget->imageSize().width(),
@@ -207,6 +224,7 @@ void MainWindow::setFrame(const QImage &image)
 
 void MainWindow::renderWidgetReady(void)
 {
+    qDebug() << "MainWindow::renderWidgetReady().";
     updateWindowTitle();
     loadGazeData("D:/Workspace/Eyex-Desktop_Qt_5_3_0_MSVC2012_OpenGL_32bit-Debug/gaze.log");
     loadVideo("D:/Workspace/Eyex/samples/Cruel Intentions 720p 4 MBit.m4v");
@@ -241,6 +259,7 @@ void MainWindow::loadGazeData(const QString &filename)
         }
     }
     f.close();
+    qDebug() << "loadGazeData() finished.";
 }
 
 
@@ -252,7 +271,6 @@ void MainWindow::loadVideo(const QString &filename)
     bool ok = d->decoderThread->openVideo(filename);
     if (ok)
         d->decoderThread->start();
-    return;
 #else
     QUrl mediaFileUrl = QUrl::fromLocalFile(filename);
     statusBar()->showMessage(tr("Loaded '%1'.").arg(mediaFileUrl.toString()), 5000);

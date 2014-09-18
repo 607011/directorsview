@@ -3,8 +3,5 @@
 
 #include "semaphores.h"
 
-
-
 QSemaphore gFramesProduced(MAX_FRAMES_IN_QUEUE);
 QSemaphore gFramesRendered(MAX_FRAMES_IN_QUEUE);
-

@@ -13,7 +13,7 @@
 
 class QuiltWidgetPrivate {
 public:
-    QuiltWidgetPrivate()
+    explicit QuiltWidgetPrivate()
         : imageSize(QSize(64, 64))
         , currentImageIdx(-1)
         , quilt(QPixmap(640, 480))

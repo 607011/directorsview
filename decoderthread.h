@@ -27,14 +27,14 @@ protected:
     virtual void run(void);
 
 signals:
-    void frameReady(QImage);
+    void frameReady(QImage, int);
     void positionChanged(qint64);
     void durationChanged(qint64);
 
 public slots:
 
 private: // methods
-    int decodePacket(int &got_frame, bool cached);
+    int decodePacket(int &gotFrame);
 
 private:
     QScopedPointer<DecoderThreadPrivate> d_ptr;

@@ -20,8 +20,8 @@ class VideoWidget : public QWidget
     Q_OBJECT
 
 public:
-    VideoWidget(QWidget *parent = 0);
-    ~VideoWidget();
+    explicit VideoWidget(QWidget *parent = nullptr);
+    virtual ~VideoWidget();
 
     QAbstractVideoSurface *videoSurface(void) const;
 

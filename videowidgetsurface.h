@@ -17,7 +17,8 @@ class VideoWidgetSurface : public QAbstractVideoSurface
     Q_OBJECT
 
 public:
-    VideoWidgetSurface(QWidget *widget, QObject *parent = 0);
+    explicit VideoWidgetSurface(QWidget *widget, QObject *parent = nullptr);
+    virtual ~VideoWidgetSurface();
 
     QList<QVideoFrame::PixelFormat> supportedPixelFormats(
             QAbstractVideoBuffer::HandleType handleType = QAbstractVideoBuffer::NoHandle) const;
@@ -35,7 +36,7 @@ public:
 
 
 signals:
-    void frameReady(const QImage&);
+    void frameReady(const QImage&, int);
 
 private:
     QScopedPointer<VideoWidgetSurfacePrivate> d_ptr;

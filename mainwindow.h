@@ -34,13 +34,15 @@ private: // methods
     void updateWindowTitle(void);
     void saveSettings(void);
     void restoreSettings(void);
+    void saveGazeData(void);
+    void saveGazeData(const QString &filename);
     void loadGazeData(const QString &filename);
     void loadVideo(const QString &filename);
     void processFrame(void);
 
 private slots:
     void getGazeSample(const Sample &);
-    void setFrame(const QImage &);
+    void setFrame(const QImage &, int frameCount);
     void renderWidgetReady(void);
     void openVideo(void);
     void openGazeData(void);

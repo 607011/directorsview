@@ -23,7 +23,8 @@ class RenderWidget : public QGLWidget, protected QGLFunctions
 {
     Q_OBJECT
 public:
-    explicit RenderWidget(QWidget *parent = NULL);
+    explicit RenderWidget(QWidget *parent = nullptr);
+    virtual ~RenderWidget();
     virtual QSize minimumSizeHint(void) const { return QSize(240, 160); }
     virtual QSize sizeHint(void) const  { return QSize(640, 480); }
     void updateViewport(void);
@@ -32,14 +33,12 @@ public:
 
 signals:
     void ready(void);
-    void frameReady(void);
     void vertexShaderError(QString);
     void fragmentShaderError(QString);
     void linkerError(QString);
-    void closed(void);
 
 public slots:
-    void setFrame(const QImage &);
+    void setFrame(const QImage &, int);
     void setGazePoint(const QPointF &);
     void setPeepholeRadius(GLfloat);
 

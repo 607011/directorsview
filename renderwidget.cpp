@@ -58,6 +58,12 @@ RenderWidget::RenderWidget(QWidget *parent)
 }
 
 
+RenderWidget::~RenderWidget()
+{
+    // ...
+}
+
+
 void RenderWidget::makeFBO(void)
 {
     Q_D(RenderWidget);
@@ -149,20 +155,19 @@ void RenderWidget::paintGL(void)
     d->fbo->release();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    emit frameReady();
 }
 
 
 void RenderWidget::closeEvent(QCloseEvent *e)
 {
-    emit closed();
     e->accept();
 }
 
 
-void RenderWidget::setFrame(const QImage &image)
+void RenderWidget::setFrame(const QImage &image, int nr)
 {
     Q_D(RenderWidget);
+    Q_UNUSED(nr);
     if (!image.isNull()) {
         d->frameSize = image.size();
         makeFBO();

@@ -6,7 +6,7 @@
 
 #include <QSemaphore>
 
-static const int MAX_FRAMES_IN_QUEUE = 100;
+static const int MAX_FRAMES_IN_QUEUE = 64;
 
 extern QSemaphore gFramesProduced;
 extern QSemaphore gFramesRendered;

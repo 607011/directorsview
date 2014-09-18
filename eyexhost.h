@@ -25,7 +25,7 @@ signals:
     void fixationSampleReady(const Sample&);
 
 private:
-    EyeXHost(void);
+    explicit EyeXHost(void);
     virtual ~EyeXHost();
 
     static const TX_STRING InteractorId;
