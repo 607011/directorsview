@@ -168,13 +168,15 @@ void RenderWidget::setFrame(const QImage &image, int nr)
 {
     Q_D(RenderWidget);
     Q_UNUSED(nr);
+    QImage img;
     if (!image.isNull()) {
+        img = image.convertToFormat(QImage::Format_ARGB32);
         d->frameSize = image.size();
         makeFBO();
     }
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->textureHandle);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, img.bits());
     gFramesProduced.release();
     updateViewport();
 }
