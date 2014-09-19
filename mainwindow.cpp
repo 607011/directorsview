@@ -80,14 +80,14 @@ MainWindow::MainWindow(QWidget *parent)
     controlLayout->addWidget(d->playButton);
     controlLayout->addWidget(d->positionSlider);
 
-    QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(getGazeSample(Sample)));
+    QObject::connect(EyeXHost::instance(), SIGNAL(gazeSampleReady(Sample)), SLOT(addGazeSample(Sample)));
     QObject::connect(d->decoderThread, SIGNAL(frameReady(QImage, int)), d->renderWidget, SLOT(setFrame(QImage, int)));
     QObject::connect(d->decoderThread, SIGNAL(positionChanged(qint64)), SLOT(positionChanged(qint64)));
     QObject::connect(d->decoderThread, SIGNAL(durationChanged(qint64)), SLOT(durationChanged(qint64)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage, int)), SLOT(setFrame(QImage, int)));
     QObject::connect(d->videoWidget->videoSurface(), SIGNAL(frameReady(QImage, int)), d->renderWidget, SLOT(setFrame(QImage, int)));
     QObject::connect(d->renderWidget, SIGNAL(ready()), SLOT(renderWidgetReady()));
-    QObject::connect(d->videoWidget, SIGNAL(virtualGazePointChanged(QPointF)), d->renderWidget, SLOT(setGazePoint(QPointF)));
+    QObject::connect(d->videoWidget, SIGNAL(virtualGazePointChanged(QPointF)), SLOT(setVirtualGazePoint(QPointF)));
 
     QObject::connect(ui->actionVisualizeGaze, SIGNAL(toggled(bool)), d->videoWidget, SLOT(setVisualisation(bool)));
     QObject::connect(ui->actionOpenVideo, SIGNAL(triggered()), SLOT(openVideo()));
@@ -196,7 +196,16 @@ void MainWindow::closeEvent(QCloseEvent *e)
 }
 
 
-void MainWindow::getGazeSample(const Sample &sample)
+void MainWindow::setVirtualGazePoint(const QPointF &relativePos)
+{
+    Q_D(MainWindow);
+    if (d->player->state() == QMediaPlayer::PlayingState)
+        d->gazeSamples.append(Sample(relativePos, d->player->position()));
+    d->renderWidget->setGazePoint(relativePos);
+}
+
+
+void MainWindow::addGazeSample(const Sample &sample)
 {
     Q_D(MainWindow);
     const QPoint &localPos = d->videoWidget->mapFromGlobal(sample.pos.toPoint());
@@ -215,8 +224,8 @@ void MainWindow::setFrame(const QImage &image, int frameCount)
     Q_UNUSED(frameCount);
     if (d->gazeSamples.count() > 0) {
         const Sample &currentSample = d->gazeSamples.last();
-        QPoint pos(currentSample.pos.x() * image.width() - d->quiltWidget->imageSize().width(),
-                   currentSample.pos.y() * image.height() - d->quiltWidget->imageSize().height());
+        QPoint pos(currentSample.pos.x() * image.width() - d->quiltWidget->imageSize().width() / 2,
+                   currentSample.pos.y() * image.height() - d->quiltWidget->imageSize().height() / 2);
         d->quiltWidget->addImage(image.copy(QRect(pos, d->quiltWidget->imageSize())));
     }
 }
@@ -266,7 +275,7 @@ void MainWindow::loadGazeData(const QString &filename)
 void MainWindow::loadVideo(const QString &filename)
 {
     Q_D(MainWindow);
-#if 1
+#if 0
     d->decoderThread->abort();
     bool ok = d->decoderThread->openVideo(filename);
     if (ok)

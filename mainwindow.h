@@ -41,7 +41,8 @@ private: // methods
     void processFrame(void);
 
 private slots:
-    void getGazeSample(const Sample &);
+    void setVirtualGazePoint(const QPointF &);
+    void addGazeSample(const Sample &);
     void setFrame(const QImage &, int frameCount);
     void renderWidgetReady(void);
     void openVideo(void);
