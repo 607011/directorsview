@@ -138,6 +138,7 @@ void VideoWidget::mousePressEvent(QMouseEvent *e)
     switch (e->button()) {
     case Qt::LeftButton:
         d->leftMouseButtonPressed = true;
+        emit virtualGazePointChanged(QPointF(qreal(e->pos().x()) / width(), qreal(e->pos().y()) / height()));
         break;
     }
     e->accept();
