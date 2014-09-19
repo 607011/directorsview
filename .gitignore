@@ -1,3 +1,9 @@
 *.pro.user*
 samples/*
 ffmpeg/examples/*
+transcode/Debug/*
+transcode/Release/*
+transcode/*.opensdf
+transcode/*.sdf
+transcode/*.suo
+transcode/*.user
