@@ -14,7 +14,8 @@
 class QuiltWidgetPrivate {
 public:
     explicit QuiltWidgetPrivate()
-        : imageSize(QSize(64, 64))
+        : imageSize(QSize(128, 128))
+        , patchSize(QSize(16, 16))
         , currentImageIdx(-1)
         , quilt(QPixmap(640, 480))
     { /* ... */ }
@@ -22,6 +23,7 @@ public:
     { /* ... */ }
     QVector<QImage> images;
     const QSize imageSize;
+    const QSize patchSize;
     int currentImageIdx;
     QPixmap quilt;
 };
@@ -58,8 +60,8 @@ void QuiltWidget::addImage(const QImage &image)
 {
     Q_D(QuiltWidget);
     Q_ASSERT(image.size() == d->imageSize);
-    const int w = d->imageSize.width();
-    const int h = d->imageSize.height();
+    const int w = d->patchSize.width();
+    const int h = d->patchSize.height();
     const int nx = d->quilt.width() / w;
     const int ny = d->quilt.height() / h;
     const int nTiles = nx * ny;
@@ -81,7 +83,7 @@ void QuiltWidget::addImage(const QImage &image)
         const int modulo = i % nx;
         const int x = w * modulo;
         const int y = h * (i - modulo) / nx;
-        p.drawImage(x, y, image);
+        p.drawImage(QRectF(x, y, d->patchSize.width(), d->patchSize.height()), image);
     }
     update();
 }
